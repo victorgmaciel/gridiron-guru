@@ -1,0 +1,25 @@
+# OS junk
+.DS_Store
+
+# Python venv
+venv/
+__pycache__/
+
+# Node modules
+node_modules/
+
+# Logs
+*.log
+
+# Env files
+.env
+.env.*
+.env.local
+
+# IDE/editor settings
+.vscode/
+.idea/
+
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal

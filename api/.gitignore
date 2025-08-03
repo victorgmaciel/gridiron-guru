@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Poetry
+poetry.lock
+*.egg-info/
+
+# Virtualenv
+venv/
+.env
+
+# Logs
+*.log
+
+# Misc
+.DS_Store
