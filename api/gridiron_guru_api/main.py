@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from app.routes import router
+from gridiron_guru_api.routes import router
+
 
 app = FastAPI(
     title="Gridiron Guru API",
