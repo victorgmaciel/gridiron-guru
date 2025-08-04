@@ -38,7 +38,7 @@ DATABASE_URL=postgresql://postgres:password@localhost:5432/gridiron
 ### 4. Run the development server
 
 ```bash
-poetry run uvicorn app.main:app --reload
+poetry run uvicorn gridiron_guru_api.main:app --reload
 ```
 
 ### 5. Test the API
