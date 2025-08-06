@@ -1,10 +1,18 @@
+import sys
+import os
+
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
+# Add the `api/` directory (project root for Docker) to the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from alembic import context
 from gridiron_guru_api.models import Base
+
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
