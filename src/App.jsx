@@ -16,12 +16,21 @@ import {
   getDocs,
   updateDoc,
   onSnapshot,
-  query,
-  orderBy,
 } from "firebase/firestore";
+import { INITIAL_GAMES } from "./data/games";
+import {
+  REGULAR_SEASON_GAMES,
+  getAllRegularSeasonGames,
+  getAvailableWeeks,
+} from "./data/regularSeasonGames";
+import RegularSeasonPicks from "./components/RegularSeasonPicks";
+import PlayoffPicks from "./components/PlayoffPicks";
+import Leaderboard from "./components/Leaderboard";
+import LiveTracker from "./components/LiveTracker";
+import AdminPanel from "./components/AdminPanel";
 import "./App.css";
 
-// Firebase configuration - Replace with your Firebase project config
+// Firebase configuration - REPLACE WITH YOUR CONFIG
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -35,141 +44,27 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Initial playoff games structure
-const INITIAL_GAMES = [
-  // Wild Card Round
-  {
-    id: "wc1",
-    round: "Wild Card",
-    matchup: "TBD vs TBD",
-    home: "TBD",
-    away: "TBD",
-    winner: null,
-    points: 1,
-  },
-  {
-    id: "wc2",
-    round: "Wild Card",
-    matchup: "TBD vs TBD",
-    home: "TBD",
-    away: "TBD",
-    winner: null,
-    points: 1,
-  },
-  {
-    id: "wc3",
-    round: "Wild Card",
-    matchup: "TBD vs TBD",
-    home: "TBD",
-    away: "TBD",
-    winner: null,
-    points: 1,
-  },
-  {
-    id: "wc4",
-    round: "Wild Card",
-    matchup: "TBD vs TBD",
-    home: "TBD",
-    away: "TBD",
-    winner: null,
-    points: 1,
-  },
-  {
-    id: "wc5",
-    round: "Wild Card",
-    matchup: "TBD vs TBD",
-    home: "TBD",
-    away: "TBD",
-    winner: null,
-    points: 1,
-  },
-  {
-    id: "wc6",
-    round: "Wild Card",
-    matchup: "TBD vs TBD",
-    home: "TBD",
-    away: "TBD",
-    winner: null,
-    points: 1,
-  },
-  // Divisional Round
-  {
-    id: "div1",
-    round: "Divisional",
-    matchup: "TBD vs TBD",
-    home: "TBD",
-    away: "TBD",
-    winner: null,
-    points: 2,
-  },
-  {
-    id: "div2",
-    round: "Divisional",
-    matchup: "TBD vs TBD",
-    home: "TBD",
-    away: "TBD",
-    winner: null,
-    points: 2,
-  },
-  {
-    id: "div3",
-    round: "Divisional",
-    matchup: "TBD vs TBD",
-    home: "TBD",
-    away: "TBD",
-    winner: null,
-    points: 2,
-  },
-  {
-    id: "div4",
-    round: "Divisional",
-    matchup: "TBD vs TBD",
-    home: "TBD",
-    away: "TBD",
-    winner: null,
-    points: 2,
-  },
-  // Championship Round
-  {
-    id: "afc",
-    round: "Conference",
-    matchup: "AFC Championship",
-    home: "TBD",
-    away: "TBD",
-    winner: null,
-    points: 3,
-  },
-  {
-    id: "nfc",
-    round: "Conference",
-    matchup: "NFC Championship",
-    home: "TBD",
-    away: "TBD",
-    winner: null,
-    points: 3,
-  },
-  // Super Bowl
-  {
-    id: "sb",
-    round: "Super Bowl",
-    matchup: "Super Bowl LIX",
-    home: "TBD",
-    away: "TBD",
-    winner: null,
-    points: 5,
-  },
-];
-
 function App() {
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
-  const [games, setGames] = useState([]);
+
+  // Games state
+  const [playoffGames, setPlayoffGames] = useState([]);
+  const [regularSeasonGames, setRegularSeasonGames] =
+    useState(REGULAR_SEASON_GAMES);
+
+  // User picks
   const [userPicks, setUserPicks] = useState({});
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [activeTab, setActiveTab] = useState("picks");
+
+  // Leaderboards
+  const [regularSeasonLeaderboard, setRegularSeasonLeaderboard] = useState([]);
+  const [playoffLeaderboard, setPlayoffLeaderboard] = useState([]);
+
+  // UI state
+  const [activeTab, setActiveTab] = useState("regular-season");
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -178,7 +73,6 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // Check if user is admin
         const userDoc = await getDoc(doc(db, "users", currentUser.uid));
         if (userDoc.exists()) {
           setIsAdmin(userDoc.data().isAdmin || false);
@@ -189,26 +83,54 @@ function App() {
     return unsubscribe;
   }, []);
 
-  // Load games
+  // Load playoff games
   useEffect(() => {
-    const loadGames = async () => {
-      const gamesDoc = await getDoc(doc(db, "config", "games"));
+    const loadPlayoffGames = async () => {
+      const gamesDoc = await getDoc(doc(db, "config", "playoff-games"));
       if (gamesDoc.exists()) {
-        setGames(gamesDoc.data().games);
+        setPlayoffGames(gamesDoc.data().games);
       } else {
-        // Initialize games if they don't exist
-        await setDoc(doc(db, "config", "games"), { games: INITIAL_GAMES });
-        setGames(INITIAL_GAMES);
+        await setDoc(doc(db, "config", "playoff-games"), {
+          games: INITIAL_GAMES,
+        });
+        setPlayoffGames(INITIAL_GAMES);
       }
     };
-    loadGames();
+    loadPlayoffGames();
 
-    // Listen for game updates
-    const unsubscribe = onSnapshot(doc(db, "config", "games"), (doc) => {
-      if (doc.exists()) {
-        setGames(doc.data().games);
+    const unsubscribe = onSnapshot(
+      doc(db, "config", "playoff-games"),
+      (doc) => {
+        if (doc.exists()) {
+          setPlayoffGames(doc.data().games);
+        }
       }
-    });
+    );
+    return unsubscribe;
+  }, []);
+
+  // Load regular season games
+  useEffect(() => {
+    const loadRegularSeasonGames = async () => {
+      const gamesDoc = await getDoc(doc(db, "config", "regular-season-games"));
+      if (gamesDoc.exists()) {
+        setRegularSeasonGames(gamesDoc.data().games);
+      } else {
+        await setDoc(doc(db, "config", "regular-season-games"), {
+          games: REGULAR_SEASON_GAMES,
+        });
+      }
+    };
+    loadRegularSeasonGames();
+
+    const unsubscribe = onSnapshot(
+      doc(db, "config", "regular-season-games"),
+      (doc) => {
+        if (doc.exists()) {
+          setRegularSeasonGames(doc.data().games);
+        }
+      }
+    );
     return unsubscribe;
   }, []);
 
@@ -224,9 +146,9 @@ function App() {
     return unsubscribe;
   }, [user]);
 
-  // Load leaderboard
+  // Calculate leaderboards
   useEffect(() => {
-    const loadLeaderboard = async () => {
+    const loadLeaderboards = async () => {
       const picksSnapshot = await getDocs(collection(db, "picks"));
       const usersSnapshot = await getDocs(collection(db, "users"));
 
@@ -235,35 +157,55 @@ function App() {
         userMap[doc.id] = doc.data().displayName || "Anonymous";
       });
 
-      const scores = [];
+      const regularScores = [];
+      const playoffScores = [];
+
       picksSnapshot.forEach((doc) => {
         const picks = doc.data().picks || {};
-        let score = 0;
+        let regularScore = 0;
+        let playoffScore = 0;
 
-        games.forEach((game) => {
+        // Calculate regular season score
+        const allRegularGames = getAllRegularSeasonGames();
+        allRegularGames.forEach((game) => {
           if (game.winner && picks[game.id] === game.winner) {
-            score += game.points;
+            regularScore += game.points;
           }
         });
 
-        scores.push({
+        // Calculate playoff score
+        playoffGames.forEach((game) => {
+          if (game.winner && picks[game.id] === game.winner) {
+            playoffScore += game.points;
+          }
+        });
+
+        regularScores.push({
           uid: doc.id,
           name: userMap[doc.id] || "Anonymous",
-          score,
+          score: regularScore,
+        });
+
+        playoffScores.push({
+          uid: doc.id,
+          name: userMap[doc.id] || "Anonymous",
+          score: playoffScore,
         });
       });
 
-      scores.sort((a, b) => b.score - a.score);
-      setLeaderboard(scores);
+      regularScores.sort((a, b) => b.score - a.score);
+      playoffScores.sort((a, b) => b.score - a.score);
+
+      setRegularSeasonLeaderboard(regularScores);
+      setPlayoffLeaderboard(playoffScores);
     };
 
-    if (games.length > 0) {
-      loadLeaderboard();
-      // Refresh every 10 seconds
-      const interval = setInterval(loadLeaderboard, 10000);
+    if (playoffGames.length > 0) {
+      loadLeaderboards();
+      const interval = setInterval(loadLeaderboards, 10000);
       return () => clearInterval(interval);
     }
-  }, [games]);
+  }, [playoffGames, regularSeasonGames]);
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -294,17 +236,38 @@ function App() {
   const handlePick = async (gameId, team) => {
     if (!user) return;
 
-    const newPicks = { ...userPicks, [gameId]: team };
+    const newPicks = { ...userPicks };
+    if (newPicks[gameId] === team) {
+      delete newPicks[gameId];
+    } else {
+      newPicks[gameId] = team;
+    }
+
     await updateDoc(doc(db, "picks", user.uid), { picks: newPicks });
   };
 
-  const handleUpdateGame = async (gameId, field, value) => {
+  const handleUpdatePlayoffGame = async (gameId, field, value) => {
     if (!isAdmin) return;
 
-    const updatedGames = games.map((g) =>
+    const updatedGames = playoffGames.map((g) =>
       g.id === gameId ? { ...g, [field]: value } : g
     );
-    await updateDoc(doc(db, "config", "games"), { games: updatedGames });
+    await updateDoc(doc(db, "config", "playoff-games"), {
+      games: updatedGames,
+    });
+  };
+
+  const handleUpdateRegularSeasonGame = async (week, gameId, field, value) => {
+    if (!isAdmin) return;
+
+    const weekKey = `week${week}`;
+    const updatedGames = { ...regularSeasonGames };
+    updatedGames[weekKey] = updatedGames[weekKey].map((g) =>
+      g.id === gameId ? { ...g, [field]: value } : g
+    );
+    await updateDoc(doc(db, "config", "regular-season-games"), {
+      games: updatedGames,
+    });
   };
 
   if (loading) {
@@ -319,7 +282,7 @@ function App() {
     return (
       <div className="auth-container">
         <div className="auth-card">
-          <h1 className="auth-title">GRIDIRON GURU</h1>
+          <h1 className="auth-title">NFL PICK'EM</h1>
           <div className="auth-subtitle">
             Make your picks. Win bragging rights.
           </div>
@@ -369,38 +332,48 @@ function App() {
     );
   }
 
-  const groupedGames = games.reduce((acc, game) => {
-    if (!acc[game.round]) acc[game.round] = [];
-    acc[game.round].push(game);
-    return acc;
-  }, {});
-
-  const userScore = leaderboard.find((l) => l.uid === user.uid)?.score || 0;
-  const userRank = leaderboard.findIndex((l) => l.uid === user.uid) + 1;
+  const regularScore =
+    regularSeasonLeaderboard.find((l) => l.uid === user.uid)?.score || 0;
+  const playoffScore =
+    playoffLeaderboard.find((l) => l.uid === user.uid)?.score || 0;
+  const totalScore = regularScore + playoffScore;
 
   return (
     <div className="app">
       <header className="header">
         <div className="header-content">
-          <h1 className="header-title">PLAYOFF PICK'EM</h1>
-          <div className="header-score">
-            <div className="score-value">{userScore}</div>
-            <div className="score-label">POINTS</div>
+          <h1 className="header-title">PICK'EM</h1>
+          <div className="header-scores">
+            <div className="header-score">
+              <div className="score-value">{totalScore}</div>
+              <div className="score-label">TOTAL</div>
+            </div>
+            <div className="score-breakdown">
+              <div className="score-detail">REG: {regularScore}</div>
+              <div className="score-detail">PO: {playoffScore}</div>
+            </div>
           </div>
         </div>
-        {userRank > 0 && <div className="rank-badge">#{userRank}</div>}
       </header>
 
       <nav className="nav-tabs">
         <button
-          className={`nav-tab ${activeTab === "picks" ? "active" : ""}`}
-          onClick={() => setActiveTab("picks")}
+          className={`nav-tab ${
+            activeTab === "regular-season" ? "active" : ""
+          }`}
+          onClick={() => setActiveTab("regular-season")}
         >
-          MY PICKS
+          PICKS
         </button>
         <button
-          className={`nav-tab ${activeTab === "leaderboard" ? "active" : ""}`}
-          onClick={() => setActiveTab("leaderboard")}
+          className={`nav-tab ${activeTab === "tracker" ? "active" : ""}`}
+          onClick={() => setActiveTab("tracker")}
+        >
+          LIVE TRACKER
+        </button>
+        <button
+          className={`nav-tab ${activeTab === "standings" ? "active" : ""}`}
+          onClick={() => setActiveTab("standings")}
         >
           STANDINGS
         </button>
@@ -415,128 +388,49 @@ function App() {
       </nav>
 
       <main className="main-content">
-        {activeTab === "picks" && (
-          <div className="picks-container">
-            {Object.entries(groupedGames).map(([round, roundGames]) => (
-              <div key={round} className="round-section">
-                <h2 className="round-title">{round}</h2>
-                {roundGames.map((game) => (
-                  <div key={game.id} className="game-card">
-                    <div className="game-header">
-                      <span className="game-matchup">{game.matchup}</span>
-                      <span className="game-points">
-                        {game.points} PT{game.points > 1 ? "S" : ""}
-                      </span>
-                    </div>
-                    <div className="game-teams">
-                      <button
-                        className={`team-button ${
-                          userPicks[game.id] === game.away ? "selected" : ""
-                        } ${
-                          game.winner === game.away
-                            ? "winner"
-                            : game.winner
-                            ? "loser"
-                            : ""
-                        }`}
-                        onClick={() => handlePick(game.id, game.away)}
-                        disabled={game.winner !== null}
-                      >
-                        <span className="team-name">{game.away}</span>
-                        {userPicks[game.id] === game.away && (
-                          <span className="pick-indicator">✓</span>
-                        )}
-                      </button>
-                      <button
-                        className={`team-button ${
-                          userPicks[game.id] === game.home ? "selected" : ""
-                        } ${
-                          game.winner === game.home
-                            ? "winner"
-                            : game.winner
-                            ? "loser"
-                            : ""
-                        }`}
-                        onClick={() => handlePick(game.id, game.home)}
-                        disabled={game.winner !== null}
-                      >
-                        <span className="team-name">{game.home}</span>
-                        {userPicks[game.id] === game.home && (
-                          <span className="pick-indicator">✓</span>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
+        {activeTab === "regular-season" && (
+          <RegularSeasonPicks
+            regularSeasonGames={regularSeasonGames}
+            userPicks={userPicks}
+            handlePick={handlePick}
+            availableWeeks={getAvailableWeeks()}
+          />
         )}
 
-        {activeTab === "leaderboard" && (
-          <div className="leaderboard-container">
-            {leaderboard.map((entry, index) => (
-              <div
-                key={entry.uid}
-                className={`leaderboard-entry ${
-                  entry.uid === user.uid ? "current-user" : ""
-                }`}
-              >
-                <div className="leaderboard-rank">#{index + 1}</div>
-                <div className="leaderboard-name">{entry.name}</div>
-                <div className="leaderboard-score">{entry.score}</div>
-              </div>
-            ))}
-            {leaderboard.length === 0 && (
-              <div className="empty-state">No picks yet. Be the first!</div>
-            )}
-          </div>
+        {activeTab === "playoffs-pick" && (
+          <PlayoffPicks
+            games={playoffGames}
+            userPicks={userPicks}
+            handlePick={handlePick}
+          />
+        )}
+
+        {activeTab === "tracker" && (
+          <LiveTracker
+            regularSeasonGames={regularSeasonGames}
+            playoffGames={playoffGames}
+            userPicks={userPicks}
+            availableWeeks={getAvailableWeeks()}
+            user={user}
+          />
+        )}
+
+        {activeTab === "standings" && (
+          <Leaderboard
+            regularSeasonLeaderboard={regularSeasonLeaderboard}
+            playoffLeaderboard={playoffLeaderboard}
+            user={user}
+          />
         )}
 
         {activeTab === "admin" && isAdmin && (
-          <div className="admin-container">
-            <h2 className="admin-title">Manage Games</h2>
-            {games.map((game) => (
-              <div key={game.id} className="admin-game-card">
-                <div className="admin-game-header">{game.matchup}</div>
-                <div className="admin-inputs">
-                  <input
-                    type="text"
-                    placeholder="Away Team"
-                    value={game.away}
-                    onChange={(e) =>
-                      handleUpdateGame(game.id, "away", e.target.value)
-                    }
-                    className="admin-input"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Home Team"
-                    value={game.home}
-                    onChange={(e) =>
-                      handleUpdateGame(game.id, "home", e.target.value)
-                    }
-                    className="admin-input"
-                  />
-                  <select
-                    value={game.winner || ""}
-                    onChange={(e) =>
-                      handleUpdateGame(
-                        game.id,
-                        "winner",
-                        e.target.value || null
-                      )
-                    }
-                    className="admin-select"
-                  >
-                    <option value="">No Winner</option>
-                    <option value={game.away}>{game.away}</option>
-                    <option value={game.home}>{game.home}</option>
-                  </select>
-                </div>
-              </div>
-            ))}
-          </div>
+          <AdminPanel
+            playoffGames={playoffGames}
+            regularSeasonGames={regularSeasonGames}
+            availableWeeks={getAvailableWeeks()}
+            handleUpdatePlayoffGame={handleUpdatePlayoffGame}
+            handleUpdateRegularSeasonGame={handleUpdateRegularSeasonGame}
+          />
         )}
       </main>
 

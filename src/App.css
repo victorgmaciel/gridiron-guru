@@ -207,7 +207,6 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
 }
 
 .header-title {
@@ -216,6 +215,12 @@ body {
   letter-spacing: 1px;
   color: var(--neon-green);
   text-shadow: 0 0 15px rgba(57, 255, 20, 0.5);
+}
+
+.header-scores {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .header-score {
@@ -237,15 +242,19 @@ body {
   letter-spacing: 1px;
 }
 
-.rank-badge {
-  display: inline-block;
-  background: linear-gradient(135deg, var(--gold) 0%, #ff8c00 100%);
-  color: var(--field-dark);
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 900;
-  box-shadow: 0 2px 10px rgba(255, 184, 28, 0.4);
+.score-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.score-detail {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--silver);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 /* Navigation Tabs */
@@ -292,6 +301,49 @@ body {
   to { opacity: 1; }
 }
 
+/* Week Selector */
+.week-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--overlay);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.week-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.5px;
+}
+
+.week-dropdown {
+  flex: 1;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: var(--white);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.week-dropdown:focus {
+  outline: none;
+  border-color: var(--neon-green);
+  box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
+}
+
+.week-dropdown option {
+  background: var(--field-dark);
+  color: var(--white);
+}
+
 /* Picks Container */
 .picks-container {
   display: flex;
@@ -299,7 +351,7 @@ body {
   gap: 24px;
 }
 
-.round-section {
+.week-games {
   animation: slideIn 0.4s ease-out;
 }
 
@@ -312,6 +364,33 @@ body {
     opacity: 1;
     transform: translateX(0);
   }
+}
+
+.week-title {
+  font-family: 'Bowlby One', cursive;
+  font-size: 24px;
+  color: var(--gold);
+  margin-bottom: 16px;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(255, 184, 28, 0.3);
+}
+
+.day-section {
+  margin-bottom: 24px;
+}
+
+.day-title {
+  font-family: 'Bowlby One', cursive;
+  font-size: 18px;
+  color: var(--neon-green);
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(57, 255, 20, 0.3);
+}
+
+.round-section {
+  animation: slideIn 0.4s ease-out;
+  margin-bottom: 24px;
 }
 
 .round-title {
@@ -348,6 +427,13 @@ body {
   font-size: 14px;
   font-weight: 700;
   color: var(--silver);
+  letter-spacing: 0.5px;
+}
+
+.game-time {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
   letter-spacing: 0.5px;
 }
 
@@ -424,6 +510,48 @@ body {
 .leaderboard-container {
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+.leaderboard-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.toggle-button {
+  flex: 1;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: var(--silver);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.toggle-button.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--field-dark);
+  box-shadow: 0 4px 15px rgba(255, 184, 28, 0.3);
+}
+
+.leaderboard-title {
+  font-family: 'Bowlby One', cursive;
+  font-size: 20px;
+  color: var(--neon-green);
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(57, 255, 20, 0.3);
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
@@ -475,6 +603,160 @@ body {
   font-weight: 600;
 }
 
+/* Live Tracker Styles */
+.live-tracker-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tracker-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tracker-games {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.tracker-day-section,
+.tracker-round-section {
+  margin-bottom: 20px;
+}
+
+.tracker-day-title,
+.tracker-round-title {
+  font-family: 'Bowlby One', cursive;
+  font-size: 18px;
+  color: var(--neon-green);
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(57, 255, 20, 0.3);
+}
+
+.tracker-game-card {
+  background: var(--overlay);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+}
+
+.tracker-game-card.correct {
+  border-color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.05);
+}
+
+.tracker-game-card.incorrect {
+  border-color: rgba(255, 0, 0, 0.5);
+  background: rgba(255, 0, 0, 0.05);
+}
+
+.tracker-game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tracker-matchup {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 0.5px;
+}
+
+.tracker-score,
+.tracker-points {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+  background: rgba(255, 184, 28, 0.1);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.tracker-teams-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.tracker-team {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.tracker-vs {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--silver);
+}
+
+.tracker-score-display {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--neon-green);
+  margin: 12px 0;
+  padding: 8px;
+  background: rgba(57, 255, 20, 0.05);
+  border-radius: 8px;
+}
+
+.tracker-picks-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.tracker-pick-status {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.no-pick-text {
+  color: var(--silver);
+  font-style: italic;
+}
+
+.pending-pick {
+  color: var(--gold);
+}
+
+.pending-pick strong {
+  color: var(--neon-green);
+}
+
+.correct-pick {
+  color: var(--neon-green);
+  font-weight: 700;
+}
+
+.incorrect-pick {
+  color: rgba(255, 100, 100, 1);
+  font-weight: 700;
+}
+
+.tracker-winner {
+  font-size: 13px;
+  color: var(--silver);
+}
+
+.tracker-winner strong {
+  color: var(--white);
+}
+
 /* Admin Panel */
 .admin-container {
   display: flex;
@@ -488,6 +770,12 @@ body {
   color: var(--gold);
   margin-bottom: 8px;
   letter-spacing: 1px;
+}
+
+.admin-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .admin-game-card {
@@ -509,6 +797,21 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.admin-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.admin-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .admin-input,
@@ -534,6 +837,49 @@ body {
 .admin-select option {
   background: var(--field-dark);
   color: var(--white);
+}
+
+.admin-score-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-score-input {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-input-small {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--white);
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.admin-input-small:focus {
+  outline: none;
+  border-color: var(--neon-green);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-status {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(57, 255, 20, 0.1);
+  border: 1px solid rgba(57, 255, 20, 0.3);
+  border-radius: 8px;
+  color: var(--neon-green);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 /* Sign Out Button */
