@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { initializeApp } from "firebase/app";
+import Leaderboard from "./components/Leaderboard";
 import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile,
 } from "firebase/auth";
-// import { ComparePicks } from "./components/ComparePicks";
+
 import {
   getFirestore,
   collection,
@@ -19,7 +19,7 @@ import {
   updateDoc,
   onSnapshot,
 } from "firebase/firestore";
-import { INITIAL_GAMES } from "./data/games";
+
 import {
   REGULAR_SEASON_GAMES,
   getAllRegularSeasonGames,
@@ -27,7 +27,6 @@ import {
 } from "./data/regularSeasonGames";
 import RegularSeasonPicks from "./components/RegularSeasonPicks";
 import PlayoffPicks from "./components/PlayoffPicks";
-import Leaderboard from "./components/Leaderboard";
 import LiveTracker from "./components/LiveTracker";
 import AdminPanel from "./components/AdminPanel";
 import "./App.css";
@@ -61,7 +60,7 @@ function App() {
   // User picks
   const [userPicks, setUserPicks] = useState({});
 
-  // Leaderboards
+  // Leaderboards (points standings)
   const [regularSeasonLeaderboard, setRegularSeasonLeaderboard] = useState([]);
   const [playoffLeaderboard, setPlayoffLeaderboard] = useState([]);
 
@@ -186,7 +185,7 @@ function App() {
     return unsubscribe;
   }, [user]);
 
-  // Calculate leaderboards
+  // Calculate leaderboards (points standings)
   useEffect(() => {
     const loadLeaderboards = async () => {
       try {
@@ -208,14 +207,14 @@ function App() {
           let regularScore = 0;
           let playoffScore = 0;
 
-          // Calculate regular season score
+          // regular season score
           allRegularGames.forEach((game) => {
             if (game.winner && picks[game.id] === game.winner) {
               regularScore += game.points;
             }
           });
 
-          // Calculate playoff score
+          // playoff score
           playoffGames.forEach((game) => {
             if (game.winner && picks[game.id] === game.winner) {
               playoffScore += game.points;
@@ -264,7 +263,6 @@ function App() {
         await setDoc(doc(db, "users", userCredential.user.uid), {
           displayName: displayName,
           email: email,
-          isAdmin: false,
         });
         await setDoc(doc(db, "picks", userCredential.user.uid), { picks: {} });
       } else {
@@ -433,24 +431,28 @@ function App() {
         >
           PICKS
         </button>
+
+        <button
+          className={`nav-tab ${activeTab === "leaderboard" ? "active" : ""}`}
+          onClick={() => setActiveTab("leaderboard")}
+        >
+          LEADERBOARD
+        </button>
+
         <button
           className={`nav-tab ${activeTab === "tracker" ? "active" : ""}`}
           onClick={() => setActiveTab("tracker")}
         >
           LIVE TRACKER
         </button>
+
         <button
           className={`nav-tab ${activeTab === "standings" ? "active" : ""}`}
           onClick={() => setActiveTab("standings")}
         >
           STANDINGS
         </button>
-        <button
-          className={`nav-tab ${activeTab === "compare" ? "active" : ""}`}
-          onClick={() => setActiveTab("compare")}
-        >
-          COMPARE
-        </button>
+
         {isAdmin && (
           <button
             className={`nav-tab ${activeTab === "admin" ? "active" : ""}`}
@@ -479,6 +481,14 @@ function App() {
           />
         )}
 
+        {activeTab === "leaderboard" && (
+          <Leaderboard
+            db={db}
+            currentUser={user}
+            regularSeasonGames={regularSeasonGames}
+          />
+        )}
+
         {activeTab === "tracker" && (
           <LiveTracker
             regularSeasonGames={regularSeasonGames}
@@ -490,19 +500,35 @@ function App() {
         )}
 
         {activeTab === "standings" && (
-          <Leaderboard
-            regularSeasonLeaderboard={regularSeasonLeaderboard}
-            playoffLeaderboard={playoffLeaderboard}
-            user={user}
-          />
-        )}
+          <section className="leaderboard-container">
+            <h2 className="leaderboard-title">Standings</h2>
 
-        {/* {activeTab === "compare" && (
-          <ComparePicks
-            regularSeasonGames={regularSeasonGames}
-            availableWeeks={getAvailableWeeks()}
-          />
-        )} */}
+            <div className="leaderboard-list">
+              {regularSeasonLeaderboard.map((entry, index) => {
+                const isCurrentUser = entry.uid === user.uid;
+                const playoffEntry = playoffLeaderboard.find(
+                  (p) => p.uid === entry.uid
+                );
+                const poScore = playoffEntry?.score || 0;
+                const total = entry.score + poScore;
+
+                return (
+                  <div
+                    key={entry.uid}
+                    className={
+                      "leaderboard-entry" +
+                      (isCurrentUser ? " current-user" : "")
+                    }
+                  >
+                    <div className="leaderboard-rank">#{index + 1}</div>
+                    <div className="leaderboard-name">{entry.name}</div>
+                    <div className="leaderboard-score">{total}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {activeTab === "admin" && isAdmin && (
           <AdminPanel
@@ -513,11 +539,11 @@ function App() {
             handleUpdateRegularSeasonGame={handleUpdateRegularSeasonGame}
           />
         )}
-      </main>
 
-      <button onClick={() => signOut(auth)} className="sign-out-button">
-        SIGN OUT
-      </button>
+        <button onClick={() => signOut(auth)} className="sign-out-button">
+          SIGN OUT
+        </button>
+      </main>
     </div>
   );
 }

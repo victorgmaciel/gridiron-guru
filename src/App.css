@@ -23,7 +23,7 @@ body {
   color: var(--white);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior: none;
+  overscroll-behavior: auto;
 }
 
 /* Loading Screen */
@@ -177,7 +177,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: 80px;
+  padding-bottom: 24px;
 }
 
 /* Header */
@@ -191,12 +191,11 @@ body {
   z-index: 100;
   animation: slideDown 0.4s ease-out;
 }
-
+/* Compare Picks / Leaderboard Table */
 .compare-section {
-  padding: 1.5rem;
-  max-width: 100%;
+  padding: 1.5rem 0;
+  max-width: 1200px;
   margin: 0 auto;
-  overflow-x: hidden;
 }
 
 .compare-loading,
@@ -205,88 +204,112 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem;
+  padding: 3rem 1.5rem;
   text-align: center;
   gap: 1rem;
+  color: var(--silver);
 }
 
 .compare-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   flex-wrap: wrap;
   gap: 1rem;
 }
 
-.compare-title {
-  font-size: 1.75rem;
-  font-weight: 700;
+.compare-title,
+.leaderboard-title {
+  font-family: "Bowlby One", cursive;
+  font-size: 1.6rem;
   margin: 0;
-  color: #1a1a1a;
-  letter-spacing: -0.02em;
+  letter-spacing: 1px;
+  color: var(--neon-green);
+  text-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
 }
 
 .compare-controls {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .week-label {
-  font-weight: 600;
-  font-size: 0.875rem;
+  font-weight: 700;
+  font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #666;
+  letter-spacing: 0.12em;
+  color: var(--gold);
 }
 
 .week-select {
-  padding: 0.5rem 2rem 0.5rem 0.75rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  background-color: white;
+  padding: 0.4rem 1.8rem 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background-color: rgba(0, 0, 0, 0.65);
+  color: var(--white);
   cursor: pointer;
-  transition: all 0.2s ease;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  position: relative;
+  outline: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffb81c' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0.75rem center;
+  background-position: right 0.65rem center;
+  background-size: 10px 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .week-select:hover {
-  border-color: #999;
+  border-color: var(--gold);
+  box-shadow: 0 0 10px rgba(255, 184, 28, 0.25);
 }
 
 .week-select:focus {
-  outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+  border-color: var(--neon-green);
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.3);
 }
 
+/* Table container */
 .compare-table-container {
   overflow-x: auto;
   overflow-y: visible;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e8e8e8;
+  background: linear-gradient(
+    145deg,
+    rgba(0, 0, 0, 0.85),
+    rgba(15, 41, 24, 0.95)
+  );
+  border-radius: 16px;
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.85),
+    0 0 25px rgba(57, 255, 20, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   -webkit-overflow-scrolling: touch;
   position: relative;
 }
 
+/* Table */
 .compare-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   table-layout: auto;
 }
 
+/* Header row */
 .compare-table thead {
-  background: linear-gradient(180deg, #f8f9fa 0%, #f0f1f3 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(10, 30, 20, 0.95),
+    rgba(5, 15, 10, 0.98)
+  );
 }
 
 .compare-table thead tr {
@@ -295,140 +318,178 @@ body {
   z-index: 10;
 }
 
+/* Header cells */
 .compare-table th {
-  padding: 1rem 0.75rem;
+  padding: 0.85rem 0.6rem;
   text-align: left;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.75rem;
-  letter-spacing: 0.05em;
-  color: #555;
-  border-bottom: 2px solid #d0d0d0;
-  background: linear-gradient(180deg, #f8f9fa 0%, #f0f1f3 100%);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  white-space: nowrap;
 }
 
 .compare-th-user {
   position: sticky;
   left: 0;
   z-index: 20;
-  background: linear-gradient(180deg, #f8f9fa 0%, #f0f1f3 100%);
   min-width: 150px;
   width: 150px;
   max-width: 150px;
-  border-right: 2px solid #d0d0d0;
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+  background: radial-gradient(
+      circle at left,
+      rgba(57, 255, 20, 0.1),
+      transparent 55%
+    ),
+    rgba(5, 15, 10, 0.98);
 }
 
 .compare-th-game {
   min-width: 120px;
   width: 120px;
   text-align: center;
-  padding: 0.75rem 0.5rem;
+  padding: 0.85rem 0.4rem;
   white-space: nowrap;
 }
 
+/* Game header cell content */
 .game-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.85rem;
+  gap: 0.15rem;
+  font-size: 0.78rem;
 }
 
 .team-away,
 .team-home {
-  font-weight: 700;
-  color: #2c3e50;
-  white-space: nowrap;
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+}
+
+.team-away {
+  color: var(--silver);
+}
+.team-home {
+  color: var(--white);
 }
 
 .at-symbol {
-  font-size: 0.7rem;
-  color: #999;
-  font-weight: 400;
+  font-size: 0.65rem;
+  color: var(--gold);
+  font-weight: 700;
 }
 
+/* Body rows */
 .compare-table tbody tr {
-  transition: background-color 0.15s ease;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.compare-table tbody tr:hover {
-  background-color: #f8f9fa;
+.compare-table tbody tr:nth-child(odd) {
+  background-color: rgba(0, 0, 0, 0.4);
 }
 
 .compare-table tbody tr:nth-child(even) {
-  background-color: #fafbfc;
+  background-color: rgba(0, 0, 0, 0.55);
 }
 
-.compare-table tbody tr:nth-child(even):hover {
-  background-color: #f3f4f6;
+.compare-table tbody tr:hover {
+  background-color: rgba(57, 255, 20, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(57, 255, 20, 0.3);
 }
 
+/* Current user highlight */
+.compare-row.current-user,
+.compare-row.current-user:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(57, 255, 20, 0.18),
+    rgba(0, 0, 0, 0.8)
+  );
+  box-shadow: inset 0 0 0 1px rgba(57, 255, 20, 0.7);
+}
+
+/* User cell */
 .compare-td-user {
   position: sticky;
   left: 0;
   z-index: 5;
-  background: white;
-  font-weight: 600;
-  padding: 1rem 0.75rem;
-  border-right: 1px solid #e8e8e8;
-  color: #1a1a1a;
+  font-weight: 700;
+  padding: 0.9rem 0.7rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--white);
   min-width: 150px;
   width: 150px;
   max-width: 150px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  background: rgba(0, 0, 0, 0.85);
 }
 
+/* Keep sticky cell colors in sync with row stripes */
 .compare-table tbody tr:nth-child(even) .compare-td-user {
-  background: #fafbfc;
+  background: rgba(0, 0, 0, 0.9);
 }
 
-.compare-table tbody tr:hover .compare-td-user {
-  background-color: #f8f9fa;
+.compare-table tbody tr.current-user .compare-td-user {
+  background: rgba(0, 0, 0, 0.95);
 }
 
-.compare-table tbody tr:nth-child(even):hover .compare-td-user {
-  background-color: #f3f4f6;
-}
-
+/* Pick cells */
 .compare-td-pick {
   text-align: center;
-  padding: 1rem 0.5rem;
-  border-right: 1px solid #f0f0f0;
+  padding: 0.8rem 0.35rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
   min-width: 120px;
   width: 120px;
 }
 
+/* Pick pill */
 .pick-text {
   display: inline-block;
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  background-color: #f5f5f5;
-  color: #666;
-  min-width: 50px;
-  transition: all 0.2s ease;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  background-color: rgba(255, 255, 255, 0.04);
+  color: var(--silver);
+  min-width: 46px;
+  transition: all 0.18s ease;
   white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* Correct / incorrect states */
 .pick-correct .pick-text {
-  background-color: #d4edda;
-  color: #155724;
-  border: 2px solid #28a745;
+  background: radial-gradient(
+    circle at top,
+    rgba(57, 255, 20, 0.28),
+    rgba(0, 0, 0, 0.9)
+  );
+  color: var(--neon-green);
+  border-color: rgba(57, 255, 20, 0.9);
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.5);
 }
 
 .pick-incorrect .pick-text {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 2px solid #dc3545;
+  background: radial-gradient(
+    circle at top,
+    rgba(255, 80, 80, 0.28),
+    rgba(0, 0, 0, 0.9)
+  );
+  color: #ff9b9b;
+  border-color: rgba(255, 80, 80, 0.8);
+  box-shadow: 0 0 8px rgba(255, 80, 80, 0.4);
 }
 
-/* Responsive adjustments */
+/* Responsive tweaks */
 @media (max-width: 768px) {
   .compare-section {
-    padding: 1rem;
+    padding: 1rem 0;
   }
 
   .compare-header {
@@ -436,23 +497,22 @@ body {
     align-items: flex-start;
   }
 
-  .compare-title {
-    font-size: 1.5rem;
+  .leaderboard-title {
+    font-size: 1.35rem;
   }
 
   .compare-th-user,
   .compare-td-user {
-    min-width: 100px;
-    width: 100px;
-    max-width: 100px;
-    font-size: 0.8rem;
-    padding: 0.75rem 0.5rem;
+    min-width: 110px;
+    width: 110px;
+    max-width: 110px;
+    font-size: 0.78rem;
   }
 
   .compare-th-game,
   .compare-td-pick {
-    min-width: 90px;
-    width: 90px;
+    min-width: 95px;
+    width: 95px;
   }
 
   .game-header {
@@ -460,46 +520,15 @@ body {
   }
 
   .pick-text {
-    font-size: 0.75rem;
-    padding: 0.3rem 0.5rem;
-    min-width: 40px;
+    font-size: 0.72rem;
+    padding: 0.28rem 0.55rem;
   }
 
   .compare-table th,
   .compare-table td {
-    padding: 0.5rem 0.25rem;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
   }
-}
-
-/* Loading spinner */
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f0f0f0;
-  border-top: 4px solid #4a90e2;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Ensure table doesn't break layout */
-.compare-row {
-  height: auto;
-}
-
-/* Prevent table cell content overflow */
-.compare-table td,
-.compare-table th {
-  box-sizing: border-box;
-  vertical-align: middle;
 }
 
 @keyframes spin {
@@ -736,9 +765,17 @@ body {
 
 .game-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 12px;
+  gap: 0.15rem;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.game-teams-line {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 .game-matchup {
@@ -747,6 +784,15 @@ body {
   color: var(--silver);
   letter-spacing: 0.5px;
 }
+.game-meta {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--silver);
+  opacity: 0.8;
+}
+
 
 .game-time {
   font-size: 12px;
@@ -1200,25 +1246,34 @@ body {
   font-weight: 700;
 }
 
-/* Sign Out Button */
 .sign-out-button {
   position: fixed;
-  bottom: 20px;
+  bottom: 20px;                     
   left: 50%;
   transform: translateX(-50%);
+
   padding: 14px 32px;
-  background: rgba(255, 0, 0, 0.8);
-  border: 2px solid rgba(255, 0, 0, 1);
+  background: rgba(255, 0, 0, 0.35); 
+  border: 2px solid rgba(255, 0, 0, 0.8);
   border-radius: 12px;
+
   color: var(--white);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 1px;
+
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(255, 0, 0, 0.3);
+  box-shadow: 0 4px 20px rgba(255, 0, 0, 0.25);
+  backdrop-filter: blur(4px);       
   z-index: 1000;
 }
+
+.sign-out-button:active {
+  transform: translateX(-50%) scale(0.95);
+}
+
+
 
 .sign-out-button:active {
   transform: translateX(-50%) scale(0.95);
