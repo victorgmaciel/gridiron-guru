@@ -5,10 +5,12 @@ export default function RegularSeasonPicks({
   userPicks,
   handlePick,
   availableWeeks,
+  isWeekLocked, // 👈 new
 }) {
   const [selectedWeek, setSelectedWeek] = useState(availableWeeks[0] || 13);
 
   const currentWeekGames = regularSeasonGames[`week${selectedWeek}`] || [];
+  const locked = isWeekLocked ? isWeekLocked(selectedWeek) : false;
 
   return (
     <div className="picks-container">
@@ -31,9 +33,15 @@ export default function RegularSeasonPicks({
         </select>
       </div>
 
-      {/* Games for Selected Week */}
       <div className="week-games">
         <h2 className="week-title">Week {selectedWeek}</h2>
+
+        {locked && (
+          <div className="empty-state">
+            Picks for Week {selectedWeek} are locked. You can no longer make
+            changes.
+          </div>
+        )}
 
         {currentWeekGames.length === 0 ? (
           <div className="empty-state">
@@ -67,8 +75,10 @@ export default function RegularSeasonPicks({
                               ? "loser"
                               : ""
                           }`}
-                          onClick={() => handlePick(game.id, game.away)}
-                          disabled={game.winner !== null}
+                          onClick={() =>
+                            !locked && handlePick(game.id, game.away)
+                          }
+                          disabled={locked || game.winner !== null}
                         >
                           <span className="team-name">{game.away}</span>
                           {userPicks[game.id] === game.away && (
@@ -85,8 +95,10 @@ export default function RegularSeasonPicks({
                               ? "loser"
                               : ""
                           }`}
-                          onClick={() => handlePick(game.id, game.home)}
-                          disabled={game.winner !== null}
+                          onClick={() =>
+                            !locked && handlePick(game.id, game.home)
+                          }
+                          disabled={locked || game.winner !== null}
                         >
                           <span className="team-name">{game.home}</span>
                           {userPicks[game.id] === game.home && (

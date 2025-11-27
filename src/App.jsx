@@ -6,7 +6,9 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  updateProfile,
 } from "firebase/auth";
+// import { ComparePicks } from "./components/ComparePicks";
 import {
   getFirestore,
   collection,
@@ -30,14 +32,14 @@ import LiveTracker from "./components/LiveTracker";
 import AdminPanel from "./components/AdminPanel";
 import "./App.css";
 
-// Firebase configuration - REPLACE WITH YOUR CONFIG
+// Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyD0ANeqc2wuifzgXnZBIAMUqu3pJyyPV94",
+  authDomain: "gridiron-guru-d1963.firebaseapp.com",
+  projectId: "gridiron-guru-d1963",
+  storageBucket: "gridiron-guru-d1963.firebasestorage.app",
+  messagingSenderId: "485346155626",
+  appId: "1:485346155626:web:214711fab381363b2afe13",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -73,64 +75,93 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (userDoc.exists()) {
-          setIsAdmin(userDoc.data().isAdmin || false);
+        try {
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          if (userDoc.exists()) {
+            setIsAdmin(userDoc.data().isAdmin || false);
+          } else {
+            setIsAdmin(false);
+          }
+        } catch (err) {
+          console.error("Error loading user doc:", err);
+          setIsAdmin(false);
         }
+      } else {
+        setIsAdmin(false);
       }
       setLoading(false);
     });
+
     return unsubscribe;
   }, []);
 
   // Load playoff games
   useEffect(() => {
     const loadPlayoffGames = async () => {
-      const gamesDoc = await getDoc(doc(db, "config", "playoff-games"));
-      if (gamesDoc.exists()) {
-        setPlayoffGames(gamesDoc.data().games);
-      } else {
-        await setDoc(doc(db, "config", "playoff-games"), {
-          games: INITIAL_GAMES,
-        });
-        setPlayoffGames(INITIAL_GAMES);
+      try {
+        const gamesDoc = await getDoc(doc(db, "config", "playoff-games"));
+
+        if (gamesDoc.exists()) {
+          setPlayoffGames(gamesDoc.data().games);
+        } else {
+          console.warn("config/playoff-games document is missing in Firestore");
+        }
+      } catch (err) {
+        console.error("Error loading playoff games:", err);
       }
     };
+
     loadPlayoffGames();
 
     const unsubscribe = onSnapshot(
       doc(db, "config", "playoff-games"),
-      (doc) => {
-        if (doc.exists()) {
-          setPlayoffGames(doc.data().games);
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setPlayoffGames(docSnap.data().games);
         }
+      },
+      (err) => {
+        console.error("Error in playoff-games onSnapshot:", err);
       }
     );
+
     return unsubscribe;
   }, []);
 
   // Load regular season games
   useEffect(() => {
     const loadRegularSeasonGames = async () => {
-      const gamesDoc = await getDoc(doc(db, "config", "regular-season-games"));
-      if (gamesDoc.exists()) {
-        setRegularSeasonGames(gamesDoc.data().games);
-      } else {
-        await setDoc(doc(db, "config", "regular-season-games"), {
-          games: REGULAR_SEASON_GAMES,
-        });
+      try {
+        const gamesDoc = await getDoc(
+          doc(db, "config", "regular-season-games")
+        );
+
+        if (gamesDoc.exists()) {
+          setRegularSeasonGames(gamesDoc.data().games);
+        } else {
+          console.warn(
+            "config/regular-season-games document is missing in Firestore"
+          );
+        }
+      } catch (err) {
+        console.error("Error loading regular season games:", err);
       }
     };
+
     loadRegularSeasonGames();
 
     const unsubscribe = onSnapshot(
       doc(db, "config", "regular-season-games"),
-      (doc) => {
-        if (doc.exists()) {
-          setRegularSeasonGames(doc.data().games);
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setRegularSeasonGames(docSnap.data().games);
         }
+      },
+      (err) => {
+        console.error("Error in regular-season-games onSnapshot:", err);
       }
     );
+
     return unsubscribe;
   }, []);
 
@@ -138,66 +169,80 @@ function App() {
   useEffect(() => {
     if (!user) return;
 
-    const unsubscribe = onSnapshot(doc(db, "picks", user.uid), (doc) => {
-      if (doc.exists()) {
-        setUserPicks(doc.data().picks || {});
+    const unsubscribe = onSnapshot(
+      doc(db, "picks", user.uid),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setUserPicks(docSnap.data().picks || {});
+        } else {
+          setUserPicks({});
+        }
+      },
+      (err) => {
+        console.error("Error in user picks onSnapshot:", err);
       }
-    });
+    );
+
     return unsubscribe;
   }, [user]);
 
   // Calculate leaderboards
   useEffect(() => {
     const loadLeaderboards = async () => {
-      const picksSnapshot = await getDocs(collection(db, "picks"));
-      const usersSnapshot = await getDocs(collection(db, "users"));
+      try {
+        const picksSnapshot = await getDocs(collection(db, "picks"));
+        const usersSnapshot = await getDocs(collection(db, "users"));
 
-      const userMap = {};
-      usersSnapshot.forEach((doc) => {
-        userMap[doc.id] = doc.data().displayName || "Anonymous";
-      });
+        const userMap = {};
+        usersSnapshot.forEach((docSnap) => {
+          userMap[docSnap.id] = docSnap.data().displayName || "Anonymous";
+        });
 
-      const regularScores = [];
-      const playoffScores = [];
+        const regularScores = [];
+        const playoffScores = [];
 
-      picksSnapshot.forEach((doc) => {
-        const picks = doc.data().picks || {};
-        let regularScore = 0;
-        let playoffScore = 0;
-
-        // Calculate regular season score
         const allRegularGames = getAllRegularSeasonGames();
-        allRegularGames.forEach((game) => {
-          if (game.winner && picks[game.id] === game.winner) {
-            regularScore += game.points;
-          }
+
+        picksSnapshot.forEach((docSnap) => {
+          const picks = docSnap.data().picks || {};
+          let regularScore = 0;
+          let playoffScore = 0;
+
+          // Calculate regular season score
+          allRegularGames.forEach((game) => {
+            if (game.winner && picks[game.id] === game.winner) {
+              regularScore += game.points;
+            }
+          });
+
+          // Calculate playoff score
+          playoffGames.forEach((game) => {
+            if (game.winner && picks[game.id] === game.winner) {
+              playoffScore += game.points;
+            }
+          });
+
+          regularScores.push({
+            uid: docSnap.id,
+            name: userMap[docSnap.id] || "Anonymous",
+            score: regularScore,
+          });
+
+          playoffScores.push({
+            uid: docSnap.id,
+            name: userMap[docSnap.id] || "Anonymous",
+            score: playoffScore,
+          });
         });
 
-        // Calculate playoff score
-        playoffGames.forEach((game) => {
-          if (game.winner && picks[game.id] === game.winner) {
-            playoffScore += game.points;
-          }
-        });
+        regularScores.sort((a, b) => b.score - a.score);
+        playoffScores.sort((a, b) => b.score - a.score);
 
-        regularScores.push({
-          uid: doc.id,
-          name: userMap[doc.id] || "Anonymous",
-          score: regularScore,
-        });
-
-        playoffScores.push({
-          uid: doc.id,
-          name: userMap[doc.id] || "Anonymous",
-          score: playoffScore,
-        });
-      });
-
-      regularScores.sort((a, b) => b.score - a.score);
-      playoffScores.sort((a, b) => b.score - a.score);
-
-      setRegularSeasonLeaderboard(regularScores);
-      setPlayoffLeaderboard(playoffScores);
+        setRegularSeasonLeaderboard(regularScores);
+        setPlayoffLeaderboard(playoffScores);
+      } catch (err) {
+        console.error("Error loading leaderboards:", err);
+      }
     };
 
     if (playoffGames.length > 0) {
@@ -229,6 +274,7 @@ function App() {
       setPassword("");
       setDisplayName("");
     } catch (error) {
+      console.error("Auth error:", error);
       alert(error.message);
     }
   };
@@ -243,7 +289,16 @@ function App() {
       newPicks[gameId] = team;
     }
 
-    await updateDoc(doc(db, "picks", user.uid), { picks: newPicks });
+    try {
+      await setDoc(
+        doc(db, "picks", user.uid),
+        { picks: newPicks },
+        { merge: true }
+      );
+    } catch (err) {
+      console.error("Error updating picks:", err);
+      alert("Could not save pick: " + err.message);
+    }
   };
 
   const handleUpdatePlayoffGame = async (gameId, field, value) => {
@@ -252,9 +307,15 @@ function App() {
     const updatedGames = playoffGames.map((g) =>
       g.id === gameId ? { ...g, [field]: value } : g
     );
-    await updateDoc(doc(db, "config", "playoff-games"), {
-      games: updatedGames,
-    });
+
+    try {
+      await updateDoc(doc(db, "config", "playoff-games"), {
+        games: updatedGames,
+      });
+    } catch (err) {
+      console.error("Error updating playoff games:", err);
+      alert("Could not update playoff games: " + err.message);
+    }
   };
 
   const handleUpdateRegularSeasonGame = async (week, gameId, field, value) => {
@@ -262,12 +323,19 @@ function App() {
 
     const weekKey = `week${week}`;
     const updatedGames = { ...regularSeasonGames };
+
     updatedGames[weekKey] = updatedGames[weekKey].map((g) =>
       g.id === gameId ? { ...g, [field]: value } : g
     );
-    await updateDoc(doc(db, "config", "regular-season-games"), {
-      games: updatedGames,
-    });
+
+    try {
+      await updateDoc(doc(db, "config", "regular-season-games"), {
+        games: updatedGames,
+      });
+    } catch (err) {
+      console.error("Error updating regular season games:", err);
+      alert("Could not update regular season games: " + err.message);
+    }
   };
 
   if (loading) {
@@ -282,7 +350,7 @@ function App() {
     return (
       <div className="auth-container">
         <div className="auth-card">
-          <h1 className="auth-title">NFL PICK'EM</h1>
+          <h1 className="auth-title">NFL PICK&apos;EM</h1>
           <div className="auth-subtitle">
             Make your picks. Win bragging rights.
           </div>
@@ -342,7 +410,7 @@ function App() {
     <div className="app">
       <header className="header">
         <div className="header-content">
-          <h1 className="header-title">PICK'EM</h1>
+          <h1 className="header-title">PICK&apos;EM</h1>
           <div className="header-scores">
             <div className="header-score">
               <div className="score-value">{totalScore}</div>
@@ -376,6 +444,12 @@ function App() {
           onClick={() => setActiveTab("standings")}
         >
           STANDINGS
+        </button>
+        <button
+          className={`nav-tab ${activeTab === "compare" ? "active" : ""}`}
+          onClick={() => setActiveTab("compare")}
+        >
+          COMPARE
         </button>
         {isAdmin && (
           <button
@@ -422,6 +496,13 @@ function App() {
             user={user}
           />
         )}
+
+        {/* {activeTab === "compare" && (
+          <ComparePicks
+            regularSeasonGames={regularSeasonGames}
+            availableWeeks={getAvailableWeeks()}
+          />
+        )} */}
 
         {activeTab === "admin" && isAdmin && (
           <AdminPanel
