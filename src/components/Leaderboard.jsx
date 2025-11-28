@@ -3,28 +3,27 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { getAvailableWeeks } from "../data/regularSeasonGames";
 
 function getTeamName(game, side) {
-  // Try a bunch of likely field names so it "just works"
   const candidates =
     side === "away"
-      ? [
-          game.awayTeamName,
-          game.awayTeam,
-          game.away,
-          game.awayDisplay,
-          game.away_full,
-        ]
-      : [
-          game.homeTeamName,
-          game.homeTeam,
-          game.home,
-          game.homeDisplay,
-          game.home_full,
-        ];
+      ? [game.awayTeamName, game.awayTeam, game.away, game.awayDisplay]
+      : [game.homeTeamName, game.homeTeam, game.home, game.homeDisplay];
 
   for (const c of candidates) {
     if (typeof c === "string" && c.trim()) return c;
   }
   return side === "away" ? "Away" : "Home";
+}
+
+function getScoreMeta(game) {
+  const a = game.awayScore ?? game.away_score;
+  const h = game.homeScore ?? game.home_score;
+  const status = game.status || game.gameStatus || "";
+
+  if (a == null || h == null) {
+    return status; // e.g. "LIVE", "FINAL", "Q2"
+  }
+  const score = `${a} - ${h}`;
+  return status ? `${score} · ${status}` : score;
 }
 
 export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
@@ -66,7 +65,7 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
     };
   }, [db]);
 
-  // Games for selected week
+  // Games for selected week (these are already live via onSnapshot in App)
   const gamesForWeek = useMemo(() => {
     if (!regularSeasonGames) return [];
     const weekKey = `week${selectedWeek}`;
@@ -80,19 +79,20 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
     return picksDocs
       .map((p) => {
         const user = users.find((u) => u.id === p.id);
-        const picks = p.picks || {}; // flat { [gameId]: "Lions" }
+        const picks = p.picks || {}; // { [gameId]: "Packers" }
 
         let correct = 0;
 
         const picksByGame = gamesForWeek.map((game) => {
           const pick = picks[game.id];
-          const winner = game.winner; // may be undefined if not decided
+          const winner = game.winner; // string team name/code
 
           let result = "none";
 
           if (!pick) {
             result = "none";
           } else if (!winner) {
+            // game in progress or not started
             result = "pending";
           } else if (pick === winner) {
             result = "correct";
@@ -162,7 +162,7 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
         </div>
       </div>
 
-      {/* Summary leaderboard strip */}
+      {/* Summary strip */}
       <div className="leaderboard-container" style={{ marginBottom: "16px" }}>
         <div className="leaderboard-list">
           {rows.map((row, index) => {
@@ -185,7 +185,7 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
         </div>
       </div>
 
-      {/* Compare picks table */}
+      {/* Compare table */}
       <div className="compare-table-container">
         <table className="compare-table">
           <thead>
@@ -194,6 +194,7 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
               {gamesForWeek.map((game, idx) => {
                 const awayName = getTeamName(game, "away");
                 const homeName = getTeamName(game, "home");
+                const scoreMeta = getScoreMeta(game);
                 return (
                   <th key={game.id} className="compare-th-game">
                     <div className="game-header">
@@ -206,6 +207,9 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
                         <span className="at-symbol">@</span>
                         <span className="team-home">{homeName}</span>
                       </div>
+                      {scoreMeta && (
+                        <span className="game-score-line">{scoreMeta}</span>
+                      )}
                     </div>
                   </th>
                 );
@@ -229,6 +233,7 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
                     if (p.result === "correct") classes.push("pick-correct");
                     if (p.result === "incorrect")
                       classes.push("pick-incorrect");
+                    if (p.result === "pending") classes.push("pick-pending");
 
                     return (
                       <td key={p.gameId} className={classes.join(" ")}>

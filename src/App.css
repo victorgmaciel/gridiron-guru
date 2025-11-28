@@ -382,6 +382,28 @@ body {
   color: var(--gold);
   font-weight: 700;
 }
+.pick-pending .pick-text {
+  background: radial-gradient(
+    circle at top,
+    rgba(255, 184, 28, 0.28),
+    rgba(0, 0, 0, 0.9)
+  );
+  color: var(--gold);
+  border-color: rgba(255, 184, 28, 0.85);
+  box-shadow: 0 0 8px rgba(255, 184, 28, 0.4);
+}
+
+/* live score text under the matchup */
+.game-score-line {
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--silver);
+  opacity: 0.9;
+}
+
 
 /* Body rows */
 .compare-table tbody tr {

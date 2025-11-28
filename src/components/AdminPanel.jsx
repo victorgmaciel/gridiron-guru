@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { getFirestore, doc, updateDoc } from "firebase/firestore";
+import { getApp } from "firebase/app";
+
+const db = getFirestore(getApp());
 
 export default function AdminPanel({
   playoffGames,
@@ -35,6 +39,47 @@ export default function AdminPanel({
       {/* Regular Season Admin */}
       {adminView === "regular" && (
         <>
+          {/* ------------------------------- */}
+          {/* Upload Button (NEW)             */}
+          {/* ------------------------------- */}
+          <button
+            onClick={async () => {
+              try {
+                // Lazy imports avoid circular dependency issues
+                const { updateDoc, doc } = await import("firebase/firestore");
+                const { REGULAR_SEASON_GAMES } = await import(
+                  "../data/regularSeasonGames"
+                );
+
+                await updateDoc(doc(db, "config", "regular-season-games"), {
+                  games: REGULAR_SEASON_GAMES,
+                });
+
+                alert("Regular season games uploaded to Firestore!");
+              } catch (err) {
+                console.error("Upload error:", err);
+                alert("Failed to upload regular season games.");
+              }
+            }}
+            style={{
+              padding: "14px 20px",
+              background: "rgba(57,255,20,0.15)",
+              border: "2px solid var(--neon-green)",
+              borderRadius: "12px",
+              color: "var(--neon-green)",
+              fontWeight: "700",
+              width: "100%",
+              marginBottom: "20px",
+              boxShadow: "0 0 12px rgba(57,255,20,0.25)",
+              cursor: "pointer",
+            }}
+          >
+            📤 Upload Regular Season Schedule to Firestore
+          </button>
+
+          {/* ------------------------------- */}
+          {/* Week Selector                   */}
+          {/* ------------------------------- */}
           <div className="week-selector">
             <label htmlFor="admin-week-select" className="week-label">
               SELECT WEEK:
@@ -53,6 +98,9 @@ export default function AdminPanel({
             </select>
           </div>
 
+          {/* ------------------------------- */}
+          {/* Games                          */}
+          {/* ------------------------------- */}
           {currentWeekGames.map((game) => (
             <div key={game.id} className="admin-game-card">
               <div className="admin-game-header">
@@ -60,11 +108,11 @@ export default function AdminPanel({
               </div>
 
               <div className="admin-inputs">
+                {/* Away Team */}
                 <div className="admin-input-row">
                   <label className="admin-label">Away Team:</label>
                   <input
                     type="text"
-                    placeholder="Away Team"
                     value={game.away}
                     onChange={(e) =>
                       handleUpdateRegularSeasonGame(
@@ -78,11 +126,11 @@ export default function AdminPanel({
                   />
                 </div>
 
+                {/* Home Team */}
                 <div className="admin-input-row">
                   <label className="admin-label">Home Team:</label>
                   <input
                     type="text"
-                    placeholder="Home Team"
                     value={game.home}
                     onChange={(e) =>
                       handleUpdateRegularSeasonGame(
@@ -96,12 +144,12 @@ export default function AdminPanel({
                   />
                 </div>
 
+                {/* Score Row */}
                 <div className="admin-score-row">
                   <div className="admin-score-input">
                     <label className="admin-label">Away Score:</label>
                     <input
                       type="number"
-                      placeholder="0"
                       value={game.awayScore ?? ""}
                       onChange={(e) =>
                         handleUpdateRegularSeasonGame(
@@ -119,7 +167,6 @@ export default function AdminPanel({
                     <label className="admin-label">Home Score:</label>
                     <input
                       type="number"
-                      placeholder="0"
                       value={game.homeScore ?? ""}
                       onChange={(e) =>
                         handleUpdateRegularSeasonGame(
@@ -134,6 +181,7 @@ export default function AdminPanel({
                   </div>
                 </div>
 
+                {/* Winner */}
                 <div className="admin-input-row">
                   <label className="admin-label">Winner:</label>
                   <select
@@ -176,11 +224,11 @@ export default function AdminPanel({
               <div className="admin-game-header">{game.matchup}</div>
 
               <div className="admin-inputs">
+                {/* Away */}
                 <div className="admin-input-row">
                   <label className="admin-label">Away Team:</label>
                   <input
                     type="text"
-                    placeholder="Away Team"
                     value={game.away}
                     onChange={(e) =>
                       handleUpdatePlayoffGame(game.id, "away", e.target.value)
@@ -189,11 +237,11 @@ export default function AdminPanel({
                   />
                 </div>
 
+                {/* Home */}
                 <div className="admin-input-row">
                   <label className="admin-label">Home Team:</label>
                   <input
                     type="text"
-                    placeholder="Home Team"
                     value={game.home}
                     onChange={(e) =>
                       handleUpdatePlayoffGame(game.id, "home", e.target.value)
@@ -202,12 +250,12 @@ export default function AdminPanel({
                   />
                 </div>
 
+                {/* Score Row */}
                 <div className="admin-score-row">
                   <div className="admin-score-input">
                     <label className="admin-label">Away Score:</label>
                     <input
                       type="number"
-                      placeholder="0"
                       value={game.awayScore ?? ""}
                       onChange={(e) =>
                         handleUpdatePlayoffGame(
@@ -224,7 +272,6 @@ export default function AdminPanel({
                     <label className="admin-label">Home Score:</label>
                     <input
                       type="number"
-                      placeholder="0"
                       value={game.homeScore ?? ""}
                       onChange={(e) =>
                         handleUpdatePlayoffGame(
@@ -238,6 +285,7 @@ export default function AdminPanel({
                   </div>
                 </div>
 
+                {/* Winner */}
                 <div className="admin-input-row">
                   <label className="admin-label">Winner:</label>
                   <select
