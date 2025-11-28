@@ -28,7 +28,7 @@ import {
 import RegularSeasonPicks from "./components/RegularSeasonPicks";
 import PlayoffPicks from "./components/PlayoffPicks";
 import LiveTracker from "./components/LiveTracker";
-import AdminPanel from "./components/AdminPanel";
+// import AdminPanel from "./components/AdminPanel";
 import "./App.css";
 
 // Toggle this flag to show/hide the site-wide under construction overlay
@@ -575,7 +575,7 @@ function App() {
             </section>
           )}
 
-          {activeTab === "admin" && isAdmin && (
+          {/* {activeTab === "admin" && isAdmin && (
             <AdminPanel
               playoffGames={playoffGames}
               regularSeasonGames={regularSeasonGames}
@@ -583,7 +583,7 @@ function App() {
               handleUpdatePlayoffGame={handleUpdatePlayoffGame}
               handleUpdateRegularSeasonGame={handleUpdateRegularSeasonGame}
             />
-          )}
+          )} */}
 
           <button onClick={() => signOut(auth)} className="sign-out-button">
             SIGN OUT
