@@ -4,9 +4,6 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 import { getApp } from "firebase/app";
 import { NFL_SEASON } from "../data/regularSeasonGames";
 
-const db = getFirestore(getApp());
-const functions = getFunctions(getApp());
-
 export default function AdminPanel({
   playoffGames,
   regularSeasonGames,
@@ -14,6 +11,9 @@ export default function AdminPanel({
   handleUpdatePlayoffGame,
   handleUpdateRegularSeasonGame,
 }) {
+  const db = getFirestore(getApp());
+  const functions = getFunctions(getApp());
+
   const [adminView, setAdminView] = useState("fetch");
   const [selectedWeek, setSelectedWeek] = useState(availableWeeks[0] || 13);
 

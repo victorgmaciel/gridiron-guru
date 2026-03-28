@@ -240,7 +240,11 @@ function App() {
   if (loading) {
     return (
       <div className="loading-screen">
-        <div className="loading-spinner"></div>
+        <div className="loading-brand">
+          <div className="loading-logo">🏈</div>
+          <div className="loading-title">GRIDIRON GURU</div>
+          <div className="loading-spinner"></div>
+        </div>
       </div>
     );
   }
@@ -319,7 +323,7 @@ function App() {
       </header>
 
       {/* ---- MAIN CONTENT ---- */}
-      <main className="main-content">
+      <main className="main-content" key={activeTab}>
         {activeTab === "picks" && (
           <>
             {/* Regular / Playoff sub-toggle */}
