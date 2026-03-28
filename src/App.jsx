@@ -11,28 +11,20 @@ import {
 
 import {
   getFirestore,
-  collection,
   doc,
   setDoc,
   getDoc,
-  getDocs,
   updateDoc,
   onSnapshot,
 } from "firebase/firestore";
 
 import {
   REGULAR_SEASON_GAMES,
-  getAllRegularSeasonGames,
   getAvailableWeeks,
 } from "./data/regularSeasonGames";
 import RegularSeasonPicks from "./components/RegularSeasonPicks";
-import PlayoffPicks from "./components/PlayoffPicks";
 import LiveTracker from "./components/LiveTracker";
-// import AdminPanel from "./components/AdminPanel";
 import "./App.css";
-
-// Toggle this flag to show/hide the site-wide under construction overlay
-const UNDER_CONSTRUCTION = true;
 
 // Firebase config
 const firebaseConfig = {
@@ -48,43 +40,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Full-screen overlay that sits in front of the entire app
-function UnderConstructionOverlay() {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background:
-          "radial-gradient(circle at top, rgba(0,255,140,0.1), rgba(0,0,0,0.95))",
-        color: "white",
-        zIndex: 99999,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        textAlign: "center",
-        padding: "20px",
-        fontFamily: "Bowlby One, system-ui, sans-serif",
-      }}
-    >
-      <h1 style={{ fontSize: "3rem", marginBottom: "1rem", letterSpacing: 2 }}>
-        🏈 GRIDIRON GURU
-      </h1>
-      <h2 style={{ fontSize: "2rem", marginBottom: "1.5rem" }}>
-        SITE UNDER CONSTRUCTION
-      </h2>
-      <p style={{ fontSize: "1.1rem", maxWidth: "600px", lineHeight: 1.5 }}>
-        We&apos;re tuning up the playbook and polishing the scoreboard.
-        <br />
-        Check back soon for the full NFL pick&apos;em experience.
-      </p>
-    </div>
-  );
-}
-
 function App() {
   const [user, setUser] = useState(null);
+  const [userDisplayName, setUserDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -95,10 +53,8 @@ function App() {
     useState(REGULAR_SEASON_GAMES);
 
   const [userPicks, setUserPicks] = useState({});
-  const [regularSeasonLeaderboard, setRegularSeasonLeaderboard] = useState([]);
-  const [playoffLeaderboard, setPlayoffLeaderboard] = useState([]);
 
-  const [activeTab, setActiveTab] = useState("regular-season");
+  const [activeTab, setActiveTab] = useState("picks");
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -113,16 +69,21 @@ function App() {
         try {
           const userDoc = await getDoc(doc(db, "users", currentUser.uid));
           if (userDoc.exists()) {
-            setIsAdmin(userDoc.data().isAdmin || false);
+            const data = userDoc.data();
+            setIsAdmin(data.isAdmin || false);
+            setUserDisplayName(data.displayName || currentUser.email);
           } else {
             setIsAdmin(false);
+            setUserDisplayName(currentUser.email);
           }
         } catch (err) {
           console.error("Error loading user doc:", err);
           setIsAdmin(false);
+          setUserDisplayName(currentUser.email);
         }
       } else {
         setIsAdmin(false);
+        setUserDisplayName("");
       }
 
       setLoading(false);
@@ -131,56 +92,25 @@ function App() {
     return unsubscribe;
   }, []);
 
-  console.log("Admin status:", isAdmin);
-
   // -----------------------------------------
-  // LOAD PLAYOFF GAMES
+  // LOAD PLAYOFF GAMES (real-time)
   // -----------------------------------------
   useEffect(() => {
-    const loadPlayoffGames = async () => {
-      try {
-        const gamesDoc = await getDoc(doc(db, "config", "playoff-games"));
-        if (gamesDoc.exists()) {
-          setPlayoffGames(gamesDoc.data().games);
-        }
-      } catch (err) {
-        console.error("Error loading playoff games:", err);
-      }
-    };
-
-    loadPlayoffGames();
-
     const unsubscribe = onSnapshot(
       doc(db, "config", "playoff-games"),
       (docSnap) => {
         if (docSnap.exists()) {
-          setPlayoffGames(docSnap.data().games);
+          setPlayoffGames(docSnap.data().games || []);
         }
       }
     );
-
     return unsubscribe;
   }, []);
 
   // -----------------------------------------
-  // LOAD REGULAR SEASON GAMES
+  // LOAD REGULAR SEASON GAMES (real-time)
   // -----------------------------------------
   useEffect(() => {
-    const loadRegularSeasonGames = async () => {
-      try {
-        const gamesDoc = await getDoc(
-          doc(db, "config", "regular-season-games")
-        );
-        if (gamesDoc.exists()) {
-          setRegularSeasonGames(gamesDoc.data().games);
-        }
-      } catch (err) {
-        console.error("Error loading regular season games:", err);
-      }
-    };
-
-    loadRegularSeasonGames();
-
     const unsubscribe = onSnapshot(
       doc(db, "config", "regular-season-games"),
       (docSnap) => {
@@ -189,12 +119,11 @@ function App() {
         }
       }
     );
-
     return unsubscribe;
   }, []);
 
   // -----------------------------------------
-  // LOAD USER PICKS
+  // LOAD USER PICKS (real-time)
   // -----------------------------------------
   useEffect(() => {
     if (!user) return;
@@ -209,72 +138,20 @@ function App() {
   }, [user]);
 
   // -----------------------------------------
-  // LEADERBOARD CALCULATIONS
+  // LOCK LOGIC
+  // A week is locked once any game in it has started:
+  // scores appear, or a winner is set, or status is set.
   // -----------------------------------------
-  useEffect(() => {
-    const loadLeaderboards = async () => {
-      try {
-        const picksSnapshot = await getDocs(collection(db, "picks"));
-        const usersSnapshot = await getDocs(collection(db, "users"));
-
-        const userMap = {};
-        usersSnapshot.forEach((docSnap) => {
-          userMap[docSnap.id] = docSnap.data().displayName || "Anonymous";
-        });
-
-        const regularScores = [];
-        const playoffScores = [];
-
-        const allRegularGames = getAllRegularSeasonGames();
-
-        picksSnapshot.forEach((docSnap) => {
-          const picks = docSnap.data().picks || {};
-          let regularScore = 0;
-          let playoffScore = 0;
-
-          // regular season
-          allRegularGames.forEach((game) => {
-            if (game.winner && picks[game.id] === game.winner) {
-              regularScore += game.points;
-            }
-          });
-
-          // playoffs
-          playoffGames.forEach((game) => {
-            if (game.winner && picks[game.id] === game.winner) {
-              playoffScore += game.points;
-            }
-          });
-
-          regularScores.push({
-            uid: docSnap.id,
-            name: userMap[docSnap.id],
-            score: regularScore,
-          });
-
-          playoffScores.push({
-            uid: docSnap.id,
-            name: userMap[docSnap.id],
-            score: playoffScore,
-          });
-        });
-
-        regularScores.sort((a, b) => b.score - a.score);
-        playoffScores.sort((a, b) => b.score - a.score);
-
-        setRegularSeasonLeaderboard(regularScores);
-        setPlayoffLeaderboard(playoffScores);
-      } catch (err) {
-        console.error("Error loading leaderboard:", err);
-      }
-    };
-
-    if (playoffGames.length > 0) {
-      loadLeaderboards();
-      const interval = setInterval(loadLeaderboards, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [playoffGames, regularSeasonGames]);
+  const isWeekLocked = (weekNum) => {
+    const weekKey = `week${weekNum}`;
+    const games = regularSeasonGames[weekKey] || [];
+    return games.some(
+      (game) =>
+        game.winner !== null ||
+        game.awayScore !== null ||
+        (game.status && game.status.trim() !== "")
+    );
+  };
 
   // -----------------------------------------
   // AUTH HANDLER
@@ -289,13 +166,9 @@ function App() {
           password
         );
 
-        // Prevent overwriting admin
         await setDoc(
           doc(db, "users", userCredential.user.uid),
-          {
-            displayName,
-            email,
-          },
+          { displayName, email },
           { merge: true }
         );
 
@@ -348,20 +221,16 @@ function App() {
     const updated = playoffGames.map((g) =>
       g.id === gameId ? { ...g, [field]: value } : g
     );
-
     await updateDoc(doc(db, "config", "playoff-games"), { games: updated });
   };
 
   const handleUpdateRegularSeasonGame = async (week, gameId, field, value) => {
     if (!isAdmin) return;
-
     const weekKey = `week${week}`;
     const updatedGames = { ...regularSeasonGames };
-
     updatedGames[weekKey] = updatedGames[weekKey].map((g) =>
       g.id === gameId ? { ...g, [field]: value } : g
     );
-
     await updateDoc(doc(db, "config", "regular-season-games"), {
       games: updatedGames,
     });
@@ -372,227 +241,159 @@ function App() {
   // -----------------------------------------
   if (loading) {
     return (
-      <>
-        <div className="loading-screen">
-          <div className="loading-spinner"></div>
-        </div>
-        {UNDER_CONSTRUCTION && <UnderConstructionOverlay />}
-      </>
+      <div className="loading-screen">
+        <div className="loading-spinner"></div>
+      </div>
     );
   }
 
   if (!user) {
     return (
-      <>
-        <div className="auth-container">
-          <div className="auth-card">
-            <h1 className="auth-title">NFL PICK&apos;EM</h1>
-            <div className="auth-subtitle">
-              Make your picks. Win bragging rights.
-            </div>
+      <div className="auth-container">
+        <div className="auth-card">
+          <div className="auth-logo">🏈</div>
+          <h1 className="auth-title">GRIDIRON GURU</h1>
+          <div className="auth-subtitle">Make your picks. Win bragging rights.</div>
 
-            <form onSubmit={handleAuth} className="auth-form">
-              {isSignUp && (
-                <input
-                  type="text"
-                  placeholder="Display Name"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  required
-                  className="auth-input"
-                />
-              )}
-
+          <form onSubmit={handleAuth} className="auth-form">
+            {isSignUp && (
               <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                placeholder="Display Name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
                 required
                 className="auth-input"
               />
+            )}
 
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="auth-input"
-              />
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="auth-input"
+            />
 
-              <button type="submit" className="auth-button">
-                {isSignUp ? "SIGN UP" : "SIGN IN"}
-              </button>
-            </form>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="auth-input"
+            />
 
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="auth-toggle"
-            >
-              {isSignUp
-                ? "Already have an account? Sign in"
-                : "Need an account? Sign up"}
+            <button type="submit" className="auth-button">
+              {isSignUp ? "CREATE ACCOUNT" : "SIGN IN"}
             </button>
-          </div>
+          </form>
+
+          <button
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="auth-toggle"
+          >
+            {isSignUp
+              ? "Already have an account? Sign in"
+              : "New here? Create an account"}
+          </button>
         </div>
-        {UNDER_CONSTRUCTION && <UnderConstructionOverlay />}
-      </>
+      </div>
     );
   }
 
-  const regularScore =
-    regularSeasonLeaderboard.find((l) => l.uid === user.uid)?.score || 0;
-  const playoffScore =
-    playoffLeaderboard.find((l) => l.uid === user.uid)?.score || 0;
-  const totalScore = regularScore + playoffScore;
-
   return (
-    <>
-      <div className="app">
-        <header className="header">
-          <div className="header-content">
-            <h1 className="header-title">PICK&apos;EM</h1>
-
-            <div className="header-scores">
-              <div className="header-score">
-                <div className="score-value">{totalScore}</div>
-                <div className="score-label">TOTAL</div>
-              </div>
-              <div className="score-breakdown">
-                <div className="score-detail">REG: {regularScore}</div>
-                <div className="score-detail">PO: {playoffScore}</div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <nav className="nav-tabs">
-          <button
-            className={`nav-tab ${
-              activeTab === "regular-season" ? "active" : ""
-            }`}
-            onClick={() => setActiveTab("regular-season")}
-          >
-            PICKS
-          </button>
-
-          <button
-            className={`nav-tab ${activeTab === "leaderboard" ? "active" : ""}`}
-            onClick={() => setActiveTab("leaderboard")}
-          >
-            LEADERBOARD
-          </button>
-
-          <button
-            className={`nav-tab ${activeTab === "tracker" ? "active" : ""}`}
-            onClick={() => setActiveTab("tracker")}
-          >
-            LIVE TRACKER
-          </button>
-
-          <button
-            className={`nav-tab ${activeTab === "standings" ? "active" : ""}`}
-            onClick={() => setActiveTab("standings")}
-          >
-            STANDINGS
-          </button>
-
-          {isAdmin && (
-            <button
-              className={`nav-tab ${activeTab === "admin" ? "active" : ""}`}
-              onClick={() => setActiveTab("admin")}
-            >
-              ADMIN
+    <div className="app">
+      {/* ---- HEADER ---- */}
+      <header className="header">
+        <div className="header-content">
+          <h1 className="header-title">GRIDIRON GURU</h1>
+          <div className="header-right">
+            <span className="header-user">{userDisplayName}</span>
+            <button onClick={() => signOut(auth)} className="sign-out-button">
+              Sign Out
             </button>
-          )}
-        </nav>
+          </div>
+        </div>
+      </header>
 
-        <main className="main-content">
-          {activeTab === "regular-season" && (
-            <RegularSeasonPicks
-              regularSeasonGames={regularSeasonGames}
-              userPicks={userPicks}
-              handlePick={handlePick}
-              availableWeeks={getAvailableWeeks()}
-            />
-          )}
+      {/* ---- MAIN CONTENT ---- */}
+      <main className="main-content">
+        {activeTab === "picks" && (
+          <RegularSeasonPicks
+            regularSeasonGames={regularSeasonGames}
+            userPicks={userPicks}
+            handlePick={handlePick}
+            availableWeeks={getAvailableWeeks()}
+            isWeekLocked={isWeekLocked}
+          />
+        )}
 
-          {activeTab === "playoffs-pick" && (
-            <PlayoffPicks
-              games={playoffGames}
-              userPicks={userPicks}
-              handlePick={handlePick}
-            />
-          )}
+        {activeTab === "leaderboard" && (
+          <Leaderboard
+            db={db}
+            currentUser={user}
+            regularSeasonGames={regularSeasonGames}
+          />
+        )}
 
-          {activeTab === "leaderboard" && (
-            <Leaderboard
-              db={db}
-              currentUser={user}
-              regularSeasonGames={regularSeasonGames}
-            />
-          )}
+        {activeTab === "live" && (
+          <LiveTracker
+            regularSeasonGames={regularSeasonGames}
+            playoffGames={playoffGames}
+            userPicks={userPicks}
+            availableWeeks={getAvailableWeeks()}
+            user={user}
+          />
+        )}
 
-          {activeTab === "tracker" && (
-            <LiveTracker
-              regularSeasonGames={regularSeasonGames}
-              playoffGames={playoffGames}
-              userPicks={userPicks}
-              availableWeeks={getAvailableWeeks()}
-              user={user}
-            />
-          )}
+        {activeTab === "admin" && isAdmin && (
+          <section style={{ padding: "20px 0", color: "var(--silver)" }}>
+            <p style={{ textAlign: "center", fontWeight: 700 }}>
+              Admin panel — manage games in Firestore.
+            </p>
+          </section>
+        )}
+      </main>
 
-          {activeTab === "standings" && (
-            <section className="leaderboard-container">
-              <h2 className="leaderboard-title">Standings</h2>
+      {/* ---- BOTTOM NAV ---- */}
+      <nav className="bottom-nav">
+        <button
+          className={`bottom-nav-item ${activeTab === "picks" ? "active" : ""}`}
+          onClick={() => setActiveTab("picks")}
+        >
+          <span className="bottom-nav-icon">🏈</span>
+          <span className="bottom-nav-label">Picks</span>
+        </button>
 
-              <div className="leaderboard-list">
-                {regularSeasonLeaderboard.map((entry, index) => {
-                  const isCurrentUser = entry.uid === user.uid;
-                  const playoffEntry = playoffLeaderboard.find(
-                    (p) => p.uid === entry.uid
-                  );
-                  const poScore = playoffEntry?.score || 0;
-                  const total = entry.score + poScore;
+        <button
+          className={`bottom-nav-item ${activeTab === "leaderboard" ? "active" : ""}`}
+          onClick={() => setActiveTab("leaderboard")}
+        >
+          <span className="bottom-nav-icon">🏆</span>
+          <span className="bottom-nav-label">Leaderboard</span>
+        </button>
 
-                  return (
-                    <div
-                      key={entry.uid}
-                      className={
-                        "leaderboard-entry" +
-                        (isCurrentUser ? " current-user" : "")
-                      }
-                    >
-                      <div className="leaderboard-rank">#{index + 1}</div>
-                      <div className="leaderboard-name">{entry.name}</div>
-                      <div className="leaderboard-score">{total}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+        <button
+          className={`bottom-nav-item ${activeTab === "live" ? "active" : ""}`}
+          onClick={() => setActiveTab("live")}
+        >
+          <span className="bottom-nav-icon">⚡</span>
+          <span className="bottom-nav-label">Live</span>
+        </button>
 
-          {/* {activeTab === "admin" && isAdmin && (
-            <AdminPanel
-              playoffGames={playoffGames}
-              regularSeasonGames={regularSeasonGames}
-              availableWeeks={getAvailableWeeks()}
-              handleUpdatePlayoffGame={handleUpdatePlayoffGame}
-              handleUpdateRegularSeasonGame={handleUpdateRegularSeasonGame}
-            />
-          )} */}
-
-          <button onClick={() => signOut(auth)} className="sign-out-button">
-            SIGN OUT
+        {isAdmin && (
+          <button
+            className={`bottom-nav-item ${activeTab === "admin" ? "active" : ""}`}
+            onClick={() => setActiveTab("admin")}
+          >
+            <span className="bottom-nav-icon">⚙️</span>
+            <span className="bottom-nav-label">Admin</span>
           </button>
-        </main>
-      </div>
-
-      {UNDER_CONSTRUCTION && <UnderConstructionOverlay />}
-    </>
+        )}
+      </nav>
+    </div>
   );
 }
 

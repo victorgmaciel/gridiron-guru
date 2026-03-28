@@ -19,12 +19,12 @@ function getScoreMeta(game) {
   const h = game.homeScore ?? game.home_score;
   const status = game.status || game.gameStatus || "";
 
-  if (a == null || h == null) {
-    return status; // e.g. "LIVE", "FINAL", "Q2"
-  }
-  const score = `${a} - ${h}`;
+  if (a == null || h == null) return status;
+  const score = `${a}-${h}`;
   return status ? `${score} · ${status}` : score;
 }
+
+const MEDAL_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"];
 
 export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
   const [users, setUsers] = useState([]);
@@ -36,26 +36,16 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
     allWeeks.length > 0 ? allWeeks[0] : 1
   );
 
-  // Subscribe to users and picks
+  // Real-time subscriptions to users + picks
   useEffect(() => {
     if (!db) return;
 
     const unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
-      setUsers(
-        snap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
-      );
+      setUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
 
     const unsubPicks = onSnapshot(collection(db, "picks"), (snap) => {
-      setPicksDocs(
-        snap.docs.map((doc) => ({
-          id: doc.id, // userId
-          ...doc.data(),
-        }))
-      );
+      setPicksDocs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
 
@@ -65,47 +55,65 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
     };
   }, [db]);
 
-  // Games for selected week (these are already live via onSnapshot in App)
+  // --- OVERALL STANDINGS: total W-L across all weeks ---
+  const overallRows = useMemo(() => {
+    if (!regularSeasonGames || !picksDocs.length) return [];
+
+    const allGames = Object.values(regularSeasonGames).flat();
+
+    return picksDocs
+      .map((p) => {
+        const user = users.find((u) => u.id === p.id);
+        const picks = p.picks || {};
+        let wins = 0;
+        let losses = 0;
+
+        allGames.forEach((game) => {
+          if (!game.winner) return;
+          const pick = picks[game.id];
+          if (!pick) return;
+          if (pick === game.winner) {
+            wins++;
+          } else {
+            losses++;
+          }
+        });
+
+        return {
+          userId: p.id,
+          displayName: user?.displayName || user?.email || "Anonymous",
+          wins,
+          losses,
+        };
+      })
+      .sort((a, b) => b.wins - a.wins || a.losses - b.losses);
+  }, [picksDocs, users, regularSeasonGames]);
+
+  // --- WEEKLY BREAKDOWN ---
   const gamesForWeek = useMemo(() => {
     if (!regularSeasonGames) return [];
-    const weekKey = `week${selectedWeek}`;
-    return regularSeasonGames[weekKey] || [];
+    return regularSeasonGames[`week${selectedWeek}`] || [];
   }, [regularSeasonGames, selectedWeek]);
 
-  // Build rows: one per user
-  const rows = useMemo(() => {
+  const weekRows = useMemo(() => {
     if (!gamesForWeek.length) return [];
 
     return picksDocs
       .map((p) => {
         const user = users.find((u) => u.id === p.id);
-        const picks = p.picks || {}; // { [gameId]: "Packers" }
-
+        const picks = p.picks || {};
         let correct = 0;
 
         const picksByGame = gamesForWeek.map((game) => {
           const pick = picks[game.id];
-          const winner = game.winner; // string team name/code
-
+          const winner = game.winner;
           let result = "none";
+          if (!pick) result = "none";
+          else if (!winner) result = "pending";
+          else if (pick === winner) { result = "correct"; correct++; }
+          else result = "incorrect";
 
-          if (!pick) {
-            result = "none";
-          } else if (!winner) {
-            // game in progress or not started
-            result = "pending";
-          } else if (pick === winner) {
-            result = "correct";
-            correct += 1;
-          } else {
-            result = "incorrect";
-          }
-
-          return {
-            gameId: game.id,
-            pick,
-            result,
-          };
+          return { gameId: game.id, pick, result };
         });
 
         return {
@@ -130,22 +138,50 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
     );
   }
 
-  if (!rows.length || !gamesForWeek.length) {
-    return (
-      <section className="compare-section">
-        <div className="compare-empty">
-          <p>No picks found for this week yet.</p>
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section className="compare-section">
-      {/* Header + week selector */}
-      <div className="compare-header">
-        <h2 className="leaderboard-title">Week {selectedWeek} Leaderboard</h2>
 
+      {/* ── OVERALL STANDINGS ── */}
+      <div className="overall-standings">
+        <h2 className="leaderboard-title">Overall Standings</h2>
+
+        {overallRows.length === 0 ? (
+          <div className="compare-empty">
+            <p>No picks yet — be the first!</p>
+          </div>
+        ) : (
+          <div className="leaderboard-list">
+            {overallRows.map((row, index) => {
+              const isCurrentUser = currentUser && row.userId === currentUser.uid;
+              const medalColor = MEDAL_COLORS[index] || null;
+
+              return (
+                <div
+                  key={row.userId}
+                  className={`leaderboard-entry${isCurrentUser ? " current-user" : ""}`}
+                >
+                  <div
+                    className="leaderboard-rank"
+                    style={medalColor ? { color: medalColor } : undefined}
+                  >
+                    {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`}
+                  </div>
+                  <div className="leaderboard-name">{row.displayName}</div>
+                  <div className="leaderboard-record">
+                    {row.wins}-{row.losses}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="compare-divider" />
+
+      {/* ── WEEK BREAKDOWN ── */}
+      <div className="compare-header">
+        <h2 className="leaderboard-title">Week {selectedWeek} Breakdown</h2>
         <div className="compare-controls">
           <span className="week-label">Week</span>
           <select
@@ -154,101 +190,100 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
             onChange={(e) => setSelectedWeek(Number(e.target.value))}
           >
             {allWeeks.map((w) => (
-              <option key={w} value={w}>
-                Week {w}
-              </option>
+              <option key={w} value={w}>Week {w}</option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Summary strip */}
-      <div className="leaderboard-container" style={{ marginBottom: "16px" }}>
-        <div className="leaderboard-list">
-          {rows.map((row, index) => {
-            const isCurrentUser = currentUser && row.userId === currentUser.uid;
-            return (
-              <div
-                key={row.userId}
-                className={
-                  "leaderboard-entry" + (isCurrentUser ? " current-user" : "")
-                }
-              >
-                <div className="leaderboard-rank">#{index + 1}</div>
-                <div className="leaderboard-name">{row.displayName}</div>
-                <div className="leaderboard-score">
-                  {row.correct}/{row.total}
-                </div>
-              </div>
-            );
-          })}
+      {gamesForWeek.length === 0 || weekRows.length === 0 ? (
+        <div className="compare-empty">
+          <p>No picks found for this week yet.</p>
         </div>
-      </div>
-
-      {/* Compare table */}
-      <div className="compare-table-container">
-        <table className="compare-table">
-          <thead>
-            <tr>
-              <th className="compare-th-user">Player</th>
-              {gamesForWeek.map((game, idx) => {
-                const awayName = getTeamName(game, "away");
-                const homeName = getTeamName(game, "home");
-                const scoreMeta = getScoreMeta(game);
-                return (
-                  <th key={game.id} className="compare-th-game">
-                    <div className="game-header">
-                      <span className="game-meta">
-                        Game {idx + 1}
-                        {game.points ? ` · ${game.points}pt` : ""}
-                      </span>
-                      <div className="game-teams-line">
-                        <span className="team-away">{awayName}</span>
-                        <span className="at-symbol">@</span>
-                        <span className="team-home">{homeName}</span>
-                      </div>
-                      {scoreMeta && (
-                        <span className="game-score-line">{scoreMeta}</span>
-                      )}
-                    </div>
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => {
-              const isCurrentUser =
-                currentUser && row.userId === currentUser.uid;
+      ) : (
+        <>
+          {/* Summary strip */}
+          <div className="leaderboard-list" style={{ marginBottom: 16 }}>
+            {weekRows.map((row, index) => {
+              const isCurrentUser = currentUser && row.userId === currentUser.uid;
               return (
-                <tr
+                <div
                   key={row.userId}
-                  className={
-                    "compare-row" + (isCurrentUser ? " current-user" : "")
-                  }
+                  className={`leaderboard-entry${isCurrentUser ? " current-user" : ""}`}
                 >
-                  <td className="compare-td-user">{row.displayName}</td>
-                  {row.picksByGame.map((p) => {
-                    const classes = ["compare-td-pick"];
-                    if (p.result === "correct") classes.push("pick-correct");
-                    if (p.result === "incorrect")
-                      classes.push("pick-incorrect");
-                    if (p.result === "pending") classes.push("pick-pending");
+                  <div className="leaderboard-rank">#{index + 1}</div>
+                  <div className="leaderboard-name">{row.displayName}</div>
+                  <div className="leaderboard-record">
+                    {row.correct}/{row.total}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
+          {/* Compare table */}
+          <div className="compare-table-container">
+            <table className="compare-table">
+              <thead>
+                <tr>
+                  <th className="compare-th-user">Player</th>
+                  {gamesForWeek.map((game, idx) => {
+                    const awayName = getTeamName(game, "away");
+                    const homeName = getTeamName(game, "home");
+                    const scoreMeta = getScoreMeta(game);
                     return (
-                      <td key={p.gameId} className={classes.join(" ")}>
-                        <span className="pick-text">
-                          {p.pick ? p.pick : "—"}
-                        </span>
-                      </td>
+                      <th key={game.id} className="compare-th-game">
+                        <div className="game-header">
+                          <span className="game-meta">
+                            G{idx + 1}
+                            {game.points ? ` · ${game.points}pt` : ""}
+                          </span>
+                          <div className="game-teams-line">
+                            <span className="team-away">{awayName}</span>
+                            <span className="at-symbol">@</span>
+                            <span className="team-home">{homeName}</span>
+                          </div>
+                          {scoreMeta && (
+                            <span className="game-score-line">{scoreMeta}</span>
+                          )}
+                        </div>
+                      </th>
                     );
                   })}
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {weekRows.map((row) => {
+                  const isCurrentUser =
+                    currentUser && row.userId === currentUser.uid;
+                  return (
+                    <tr
+                      key={row.userId}
+                      className={`compare-row${isCurrentUser ? " current-user" : ""}`}
+                    >
+                      <td className="compare-td-user">{row.displayName}</td>
+                      {row.picksByGame.map((p) => {
+                        const classes = ["compare-td-pick"];
+                        if (p.result === "correct") classes.push("pick-correct");
+                        if (p.result === "incorrect") classes.push("pick-incorrect");
+                        if (p.result === "pending") classes.push("pick-pending");
+
+                        return (
+                          <td key={p.gameId} className={classes.join(" ")}>
+                            <span className="pick-text">
+                              {p.pick ? p.pick : "—"}
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </section>
   );
 }
