@@ -18,22 +18,21 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 
-import {
-  REGULAR_SEASON_GAMES,
-  getAvailableWeeks,
-} from "./data/regularSeasonGames";
+import { REGULAR_SEASON_GAMES, getAvailableWeeks } from "./data/regularSeasonGames";
 import RegularSeasonPicks from "./components/RegularSeasonPicks";
+import PlayoffPicks from "./components/PlayoffPicks";
 import LiveTracker from "./components/LiveTracker";
+import AdminPanel from "./components/AdminPanel";
 import "./App.css";
 
-// Firebase config
+// Firebase config — values come from .env.local (never committed to git)
 const firebaseConfig = {
-  apiKey: "AIzaSyD0ANeqc2wuifzgXnZBIAMUqu3pJyyPV94",
-  authDomain: "gridiron-guru-d1963.firebaseapp.com",
-  projectId: "gridiron-guru-d1963",
-  storageBucket: "gridiron-guru-d1963.firebasestorage.app",
-  messagingSenderId: "485346155626",
-  appId: "1:485346155626:web:214711fab381363b2afe13",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
@@ -49,11 +48,12 @@ function App() {
   const [isSignUp, setIsSignUp] = useState(false);
 
   const [playoffGames, setPlayoffGames] = useState([]);
-  const [regularSeasonGames, setRegularSeasonGames] =
-    useState(REGULAR_SEASON_GAMES);
+  const [regularSeasonGames, setRegularSeasonGames] = useState(REGULAR_SEASON_GAMES);
 
   const [userPicks, setUserPicks] = useState({});
 
+  // "picks" sub-mode: "regular" | "playoffs"
+  const [picksMode, setPicksMode] = useState("regular");
   const [activeTab, setActiveTab] = useState("picks");
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -139,12 +139,10 @@ function App() {
 
   // -----------------------------------------
   // LOCK LOGIC
-  // A week is locked once any game in it has started:
-  // scores appear, or a winner is set, or status is set.
+  // A week is locked once any game in it has started.
   // -----------------------------------------
   const isWeekLocked = (weekNum) => {
-    const weekKey = `week${weekNum}`;
-    const games = regularSeasonGames[weekKey] || [];
+    const games = regularSeasonGames[`week${weekNum}`] || [];
     return games.some(
       (game) =>
         game.winner !== null ||
@@ -303,6 +301,8 @@ function App() {
     );
   }
 
+  const availableWeeks = getAvailableWeeks(regularSeasonGames);
+
   return (
     <div className="app">
       {/* ---- HEADER ---- */}
@@ -321,13 +321,40 @@ function App() {
       {/* ---- MAIN CONTENT ---- */}
       <main className="main-content">
         {activeTab === "picks" && (
-          <RegularSeasonPicks
-            regularSeasonGames={regularSeasonGames}
-            userPicks={userPicks}
-            handlePick={handlePick}
-            availableWeeks={getAvailableWeeks()}
-            isWeekLocked={isWeekLocked}
-          />
+          <>
+            {/* Regular / Playoff sub-toggle */}
+            <div className="picks-mode-toggle">
+              <button
+                className={`toggle-button ${picksMode === "regular" ? "active" : ""}`}
+                onClick={() => setPicksMode("regular")}
+              >
+                REGULAR SEASON
+              </button>
+              <button
+                className={`toggle-button ${picksMode === "playoffs" ? "active" : ""}`}
+                onClick={() => setPicksMode("playoffs")}
+              >
+                PLAYOFFS
+              </button>
+            </div>
+
+            {picksMode === "regular" && (
+              <RegularSeasonPicks
+                regularSeasonGames={regularSeasonGames}
+                userPicks={userPicks}
+                handlePick={handlePick}
+                isWeekLocked={isWeekLocked}
+              />
+            )}
+
+            {picksMode === "playoffs" && (
+              <PlayoffPicks
+                games={playoffGames}
+                userPicks={userPicks}
+                handlePick={handlePick}
+              />
+            )}
+          </>
         )}
 
         {activeTab === "leaderboard" && (
@@ -343,17 +370,19 @@ function App() {
             regularSeasonGames={regularSeasonGames}
             playoffGames={playoffGames}
             userPicks={userPicks}
-            availableWeeks={getAvailableWeeks()}
+            availableWeeks={availableWeeks}
             user={user}
           />
         )}
 
         {activeTab === "admin" && isAdmin && (
-          <section style={{ padding: "20px 0", color: "var(--silver)" }}>
-            <p style={{ textAlign: "center", fontWeight: 700 }}>
-              Admin panel — manage games in Firestore.
-            </p>
-          </section>
+          <AdminPanel
+            playoffGames={playoffGames}
+            regularSeasonGames={regularSeasonGames}
+            availableWeeks={availableWeeks}
+            handleUpdatePlayoffGame={handleUpdatePlayoffGame}
+            handleUpdateRegularSeasonGame={handleUpdateRegularSeasonGame}
+          />
         )}
       </main>
 
@@ -372,7 +401,7 @@ function App() {
           onClick={() => setActiveTab("leaderboard")}
         >
           <span className="bottom-nav-icon">🏆</span>
-          <span className="bottom-nav-label">Leaderboard</span>
+          <span className="bottom-nav-label">Standings</span>
         </button>
 
         <button

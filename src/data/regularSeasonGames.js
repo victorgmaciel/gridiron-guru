@@ -208,9 +208,53 @@ export const getAllRegularSeasonGames = () => {
   return Object.values(REGULAR_SEASON_GAMES).flat();
 };
 
-// Helper to get available weeks
-export const getAvailableWeeks = () => {
-  return Object.keys(REGULAR_SEASON_GAMES)
-    .filter((week) => REGULAR_SEASON_GAMES[week].length > 0)
-    .map((week) => parseInt(week.replace("week", "")));
+// Helper to get available weeks (from static fallback — Firestore overrides in App)
+export const getAvailableWeeks = (gamesObj = REGULAR_SEASON_GAMES) => {
+  return Object.keys(gamesObj)
+    .filter((week) => Array.isArray(gamesObj[week]) && gamesObj[week].length > 0)
+    .map((week) => parseInt(week.replace("week", "")))
+    .sort((a, b) => a - b);
+};
+
+// -----------------------------------------------
+// 2025 NFL Season Config
+// Regular season: Sep 4, 2025 – Jan 4, 2026
+// Playoffs end:   Feb 8, 2026 (Super Bowl LX)
+// -----------------------------------------------
+export const NFL_SEASON = {
+  year: 2025,
+  regularSeasonStart: new Date("2025-09-04T00:00:00"),
+  regularSeasonEnd: new Date("2026-01-05T00:00:00"),
+  playoffsEnd: new Date("2026-02-09T00:00:00"), // day after Super Bowl
+};
+
+/**
+ * Returns the current NFL week number (1–18) during the regular season,
+ * or null if we're outside it.
+ */
+export const getCurrentNflWeek = () => {
+  const now = new Date();
+  const { regularSeasonStart, regularSeasonEnd } = NFL_SEASON;
+  if (now < regularSeasonStart || now >= regularSeasonEnd) return null;
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  return Math.min(Math.floor((now - regularSeasonStart) / msPerWeek) + 1, 18);
+};
+
+/**
+ * Returns true when we're outside the full NFL season window (regular + playoffs).
+ */
+export const isOffSeason = () => {
+  const now = new Date();
+  return now < NFL_SEASON.regularSeasonStart || now >= NFL_SEASON.playoffsEnd;
+};
+
+/**
+ * Best default week to show: current NFL week if in-season,
+ * otherwise the last week that has games.
+ */
+export const getDefaultWeek = (availableWeeks) => {
+  const current = getCurrentNflWeek();
+  if (current && availableWeeks.includes(current)) return current;
+  // Fallback: latest available week
+  return availableWeeks.length > 0 ? availableWeeks[availableWeeks.length - 1] : 1;
 };

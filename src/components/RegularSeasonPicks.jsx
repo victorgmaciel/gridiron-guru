@@ -1,16 +1,70 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import {
+  getAvailableWeeks,
+  getDefaultWeek,
+  isOffSeason,
+  NFL_SEASON,
+} from "../data/regularSeasonGames";
+
+function OffSeasonScreen() {
+  const start = NFL_SEASON.regularSeasonStart;
+  const formatted = start.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  // Simple countdown in days
+  const daysUntil = Math.ceil((start - new Date()) / (1000 * 60 * 60 * 24));
+  const countdownText =
+    daysUntil > 0
+      ? `${daysUntil} day${daysUntil !== 1 ? "s" : ""} away`
+      : "Season is underway!";
+
+  return (
+    <div className="offseason-screen">
+      <div className="offseason-ball">🏈</div>
+      <h2 className="offseason-title">Off-Season</h2>
+      <p className="offseason-subtitle">
+        The {NFL_SEASON.year} NFL season kicks off on
+      </p>
+      <div className="offseason-date">{formatted}</div>
+      <div className="offseason-countdown">{countdownText}</div>
+      <p className="offseason-hint">
+        Check back when the schedule drops to lock in your picks before Week 1.
+      </p>
+    </div>
+  );
+}
 
 export default function RegularSeasonPicks({
   regularSeasonGames,
   userPicks,
   handlePick,
-  availableWeeks,
   isWeekLocked,
 }) {
-  const [selectedWeek, setSelectedWeek] = useState(availableWeeks[0] || 13);
+  const availableWeeks = useMemo(
+    () => getAvailableWeeks(regularSeasonGames),
+    [regularSeasonGames]
+  );
 
-  const currentWeekGames = regularSeasonGames[`week${selectedWeek}`] || [];
-  const locked = isWeekLocked ? isWeekLocked(selectedWeek) : false;
+  const defaultWeek = useMemo(
+    () => getDefaultWeek(availableWeeks),
+    [availableWeeks]
+  );
+
+  const [selectedWeek, setSelectedWeek] = useState(null);
+
+  // Resolve the week to display — use state if set, else auto-default
+  const week = selectedWeek ?? defaultWeek;
+  const locked = isWeekLocked ? isWeekLocked(week) : false;
+  const currentWeekGames = regularSeasonGames[`week${week}`] || [];
+
+  // Show off-season screen if no games exist and we're outside the season
+  if (availableWeeks.length === 0 && isOffSeason()) {
+    return <OffSeasonScreen />;
+  }
 
   const getGameState = (game) => {
     if (game.winner) return "finished";
@@ -21,34 +75,38 @@ export default function RegularSeasonPicks({
   return (
     <div className="picks-container">
       {/* Week Selector */}
-      <div className="week-selector">
-        <label htmlFor="week-select" className="week-label">Week</label>
-        <select
-          id="week-select"
-          value={selectedWeek}
-          onChange={(e) => setSelectedWeek(parseInt(e.target.value))}
-          className="week-dropdown"
-        >
-          {availableWeeks.map((week) => (
-            <option key={week} value={week}>
-              Week {week}
-            </option>
-          ))}
-        </select>
-      </div>
+      {availableWeeks.length > 1 && (
+        <div className="week-selector">
+          <label htmlFor="week-select" className="week-label">Week</label>
+          <select
+            id="week-select"
+            value={week}
+            onChange={(e) => setSelectedWeek(parseInt(e.target.value))}
+            className="week-dropdown"
+          >
+            {availableWeeks.map((w) => (
+              <option key={w} value={w}>
+                Week {w}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Lock Banner */}
       {locked && (
         <div className="locked-banner">
-          🔒 PICKS LOCKED — Week {selectedWeek} is underway
+          🔒 PICKS LOCKED — Week {week} is underway
         </div>
       )}
 
       <div className="week-games">
-        <h2 className="week-title">Week {selectedWeek}</h2>
+        <h2 className="week-title">Week {week}</h2>
 
         {currentWeekGames.length === 0 ? (
-          <div className="empty-state">No games scheduled for this week yet.</div>
+          <div className="empty-state">
+            No games scheduled for this week yet.
+          </div>
         ) : (
           <>
             {["Thursday", "Friday", "Saturday", "Sunday", "Monday"].map((day) => {
@@ -73,7 +131,7 @@ export default function RegularSeasonPicks({
 
                     return (
                       <div key={game.id} className={cardClass}>
-                        {/* Header row: matchup + time */}
+                        {/* Header: matchup + status */}
                         <div className="game-header-top">
                           <span className="game-matchup">
                             {game.away} @ {game.home}
@@ -89,7 +147,7 @@ export default function RegularSeasonPicks({
                           )}
                         </div>
 
-                        {/* Score row (live or final) */}
+                        {/* Score row */}
                         {(gameState === "live" || gameState === "finished") &&
                           game.awayScore !== null &&
                           game.homeScore !== null && (
@@ -100,31 +158,27 @@ export default function RegularSeasonPicks({
                             </div>
                           )}
 
-                        {/* Team pick buttons */}
+                        {/* Team buttons */}
                         <div className="game-teams">
-                          {[
-                            { team: game.away, side: "away" },
-                            { team: game.home, side: "home" },
-                          ].map(({ team }) => {
+                          {[game.away, game.home].map((team) => {
                             const isSelected = userPick === team;
                             const isWinner = game.winner === team;
-                            const isLoser =
-                              game.winner && game.winner !== team;
-
-                            const btnClass = [
-                              "team-button",
-                              isSelected ? "selected" : "",
-                              isWinner ? "winner" : "",
-                              isLoser ? "loser" : "",
-                            ]
-                              .filter(Boolean)
-                              .join(" ");
+                            const isLoser = game.winner && game.winner !== team;
 
                             return (
                               <button
                                 key={team}
-                                className={btnClass}
-                                onClick={() => !locked && handlePick(game.id, team)}
+                                className={[
+                                  "team-button",
+                                  isSelected ? "selected" : "",
+                                  isWinner ? "winner" : "",
+                                  isLoser ? "loser" : "",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                                onClick={() =>
+                                  !locked && handlePick(game.id, team)
+                                }
                                 disabled={locked}
                               >
                                 <span className="team-name">{team}</span>

@@ -1016,26 +1016,256 @@ body {
 .incorrect-pick  { color: #ff8080; font-weight: 800; }
 
 /* =====================
-   ADMIN PANEL
+   OFF-SEASON SCREEN
    ===================== */
-.admin-panel {
-  padding: 20px 0;
+.offseason-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 48px 20px;
+  gap: 12px;
 }
 
-.admin-section {
+.offseason-ball {
+  font-size: 56px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.offseason-title {
+  font-family: 'Bowlby One', cursive;
+  font-size: 26px;
+  letter-spacing: 2px;
+  color: var(--neon-green);
+  text-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
+}
+
+.offseason-subtitle {
+  font-size: 14px;
+  color: var(--silver);
+  font-weight: 600;
+}
+
+.offseason-date {
+  font-family: 'Bowlby One', cursive;
+  font-size: 18px;
+  color: var(--gold);
+  letter-spacing: 0.5px;
+}
+
+.offseason-countdown {
+  display: inline-block;
+  background: rgba(57, 255, 20, 0.08);
+  border: 1px solid rgba(57, 255, 20, 0.3);
+  border-radius: 999px;
+  padding: 6px 20px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--neon-green);
+  letter-spacing: 0.5px;
+}
+
+.offseason-hint {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.35);
+  max-width: 320px;
+  line-height: 1.6;
+  margin-top: 4px;
+}
+
+/* =====================
+   PICKS MODE TOGGLE
+   ===================== */
+.picks-mode-toggle {
+  display: flex;
   background: var(--bg-card);
+  border-radius: 12px;
   border: 1px solid var(--card-border);
-  border-radius: 14px;
-  padding: 20px;
+  overflow: hidden;
+  padding: 4px;
+  gap: 4px;
   margin-bottom: 16px;
 }
 
-.admin-section h3 {
-  font-family: 'Bowlby One', cursive;
-  font-size: 16px;
+/* Playoff points badge */
+.playoff-points {
+  font-size: 11px;
+  font-weight: 800;
   color: var(--gold);
-  margin-bottom: 12px;
+  background: rgba(255, 184, 28, 0.12);
+  border: 1px solid rgba(255, 184, 28, 0.3);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.tbd-team {
+  color: var(--silver);
+  opacity: 0.5;
+}
+
+/* =====================
+   ADMIN PANEL
+   ===================== */
+.admin-container {
+  padding: 4px 0 24px;
+}
+
+.admin-title {
+  font-family: 'Bowlby One', cursive;
+  font-size: 20px;
   letter-spacing: 1px;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+
+.admin-section-title {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+
+.admin-hint {
+  font-size: 12px;
+  color: var(--silver);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.admin-fetch-section {
+  background: var(--bg-card);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.admin-fetch-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 100px;
+}
+
+.admin-divider {
+  height: 1px;
+  background: var(--card-border);
+  margin: 20px 0 16px;
+}
+
+.admin-btn {
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: 'Archivo', sans-serif;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  border: none;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.admin-btn:active { transform: scale(0.97); }
+.admin-btn:disabled { opacity: 0.5; cursor: default; }
+
+.admin-btn-primary {
+  background: var(--neon-green);
+  color: var(--bg-dark);
+  box-shadow: 0 4px 16px rgba(57, 255, 20, 0.25);
+}
+
+.admin-btn-secondary {
+  background: rgba(255, 184, 28, 0.12);
+  border: 1px solid rgba(255, 184, 28, 0.4);
+  color: var(--gold);
+}
+
+.admin-result {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.admin-result-success {
+  background: rgba(57, 255, 20, 0.08);
+  border: 1px solid rgba(57, 255, 20, 0.3);
+  color: var(--neon-green);
+}
+
+.admin-result-error {
+  background: rgba(255, 85, 85, 0.08);
+  border: 1px solid rgba(255, 85, 85, 0.3);
+  color: #ff8080;
+}
+
+.admin-game-card {
+  background: var(--bg-card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.admin-game-header {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--white);
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-game-meta {
+  font-size: 11px;
+  color: var(--silver);
+  font-weight: 600;
+}
+
+.admin-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-score-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.admin-score-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--gold);
 }
 
 .admin-input {
@@ -1047,7 +1277,6 @@ body {
   font-size: 13px;
   font-family: 'Archivo', sans-serif;
   width: 100%;
-  margin-bottom: 8px;
 }
 
 .admin-input:focus {
@@ -1055,20 +1284,44 @@ body {
   border-color: var(--neon-green);
 }
 
-.admin-button {
-  padding: 10px 20px;
-  background: var(--neon-green);
-  color: var(--bg-dark);
-  border: none;
+.admin-input-small {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
+  color: var(--white);
+  padding: 8px 10px;
   font-size: 13px;
-  font-weight: 800;
   font-family: 'Archivo', sans-serif;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: opacity 0.2s;
+  width: 100%;
 }
 
-.admin-button:hover {
-  opacity: 0.85;
+.admin-input-small:focus {
+  outline: none;
+  border-color: var(--neon-green);
+}
+
+.admin-select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--white);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: 'Archivo', sans-serif;
+  width: 100%;
+  cursor: pointer;
+}
+
+.admin-select:focus {
+  outline: none;
+  border-color: var(--neon-green);
+}
+
+.admin-status {
+  font-size: 12px;
+  color: var(--neon-green);
+  font-weight: 700;
+  padding: 6px 10px;
+  background: rgba(57, 255, 20, 0.06);
+  border-radius: 6px;
 }
