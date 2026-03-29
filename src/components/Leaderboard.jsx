@@ -78,7 +78,7 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
 
         return {
           userId: u.id,
-          displayName: u.displayName || u.email || "Anonymous",
+          displayName: u.displayName?.trim() || u.email?.trim() || "Anonymous",
           wins,
           losses,
         };
@@ -93,12 +93,12 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
   }, [regularSeasonGames, selectedWeek]);
 
   const weekRows = useMemo(() => {
-    if (!gamesForWeek.length) return [];
+    if (!gamesForWeek.length || !users.length) return [];
 
-    return picksDocs
-      .map((p) => {
-        const user = users.find((u) => u.id === p.id);
-        const picks = p.picks || {};
+    return users
+      .map((u) => {
+        const picksDoc = picksDocs.find((p) => p.id === u.id);
+        const picks = picksDoc?.picks || {};
         let correct = 0;
 
         const picksByGame = gamesForWeek.map((game) => {
@@ -114,8 +114,8 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
         });
 
         return {
-          userId: p.id,
-          displayName: user?.displayName || user?.email || "Anonymous",
+          userId: u.id,
+          displayName: u.displayName?.trim() || u.email?.trim() || "Anonymous",
           correct,
           total: gamesForWeek.length,
           picksByGame,
