@@ -126,12 +126,11 @@ function App() {
   // LOAD USER PICKS (real-time)
   // -----------------------------------------
   useEffect(() => {
+    setUserPicks({});
     if (!user) return;
 
     const unsubscribe = onSnapshot(doc(db, "picks", user.uid), (docSnap) => {
-      if (docSnap.exists()) {
-        setUserPicks(docSnap.data().picks || {});
-      }
+      setUserPicks(docSnap.exists() ? (docSnap.data().picks || {}) : {});
     });
 
     return unsubscribe;

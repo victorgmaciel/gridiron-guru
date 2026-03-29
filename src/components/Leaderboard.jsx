@@ -57,14 +57,14 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
 
   // --- OVERALL STANDINGS: total W-L across all weeks ---
   const overallRows = useMemo(() => {
-    if (!regularSeasonGames || !picksDocs.length) return [];
+    if (!regularSeasonGames || !users.length) return [];
 
     const allGames = Object.values(regularSeasonGames).flat();
 
-    return picksDocs
-      .map((p) => {
-        const user = users.find((u) => u.id === p.id);
-        const picks = p.picks || {};
+    return users
+      .map((u) => {
+        const picksDoc = picksDocs.find((p) => p.id === u.id);
+        const picks = picksDoc?.picks || {};
         let wins = 0;
         let losses = 0;
 
@@ -72,16 +72,13 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
           if (!game.winner) return;
           const pick = picks[game.id];
           if (!pick) return;
-          if (pick === game.winner) {
-            wins++;
-          } else {
-            losses++;
-          }
+          if (pick === game.winner) wins++;
+          else losses++;
         });
 
         return {
-          userId: p.id,
-          displayName: user?.displayName || user?.email || "Anonymous",
+          userId: u.id,
+          displayName: u.displayName || u.email || "Anonymous",
           wins,
           losses,
         };
