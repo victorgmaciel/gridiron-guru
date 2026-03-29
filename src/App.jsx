@@ -10,10 +10,10 @@ import {
 } from "firebase/auth";
 
 import {
-  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
   doc,
   setDoc,
-  getDoc,
   updateDoc,
   onSnapshot,
 } from "firebase/firestore";
@@ -37,7 +37,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
 
 function App() {
   const [user, setUser] = useState(null);
@@ -62,34 +62,49 @@ function App() {
   // AUTH STATE
   // -----------------------------------------
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    let unsubUserDoc = null;
+
+    const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
 
+      // Clean up previous user doc listener
+      if (unsubUserDoc) {
+        unsubUserDoc();
+        unsubUserDoc = null;
+      }
+
       if (currentUser) {
-        try {
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            setIsAdmin(data.isAdmin || false);
-            setUserDisplayName(data.displayName || currentUser.email);
-          } else {
+        // Use onSnapshot so it works offline (no getDoc one-shot fetch)
+        unsubUserDoc = onSnapshot(
+          doc(db, "users", currentUser.uid),
+          (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              setIsAdmin(data.isAdmin || false);
+              setUserDisplayName(data.displayName || currentUser.email);
+            } else {
+              setIsAdmin(false);
+              setUserDisplayName(currentUser.email);
+            }
+            setLoading(false);
+          },
+          () => {
             setIsAdmin(false);
             setUserDisplayName(currentUser.email);
+            setLoading(false);
           }
-        } catch (err) {
-          console.error("Error loading user doc:", err);
-          setIsAdmin(false);
-          setUserDisplayName(currentUser.email);
-        }
+        );
       } else {
         setIsAdmin(false);
         setUserDisplayName("");
+        setLoading(false);
       }
-
-      setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubAuth();
+      if (unsubUserDoc) unsubUserDoc();
+    };
   }, []);
 
   // -----------------------------------------
