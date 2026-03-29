@@ -34,9 +34,9 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
 
   const loading = !usersLoaded || !picksLoaded;
 
-  const allWeeks = getAvailableWeeks();
+  const allWeeks = getAvailableWeeks(regularSeasonGames);
   const [selectedWeek, setSelectedWeek] = useState(
-    allWeeks.length > 0 ? allWeeks[0] : 1
+    allWeeks.length > 0 ? allWeeks[allWeeks.length - 1] : 1
   );
 
   // Real-time subscriptions to users + picks
