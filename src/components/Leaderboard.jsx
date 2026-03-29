@@ -29,7 +29,10 @@ const MEDAL_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"];
 export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
   const [users, setUsers] = useState([]);
   const [picksDocs, setPicksDocs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [usersLoaded, setUsersLoaded] = useState(false);
+  const [picksLoaded, setPicksLoaded] = useState(false);
+
+  const loading = !usersLoaded || !picksLoaded;
 
   const allWeeks = getAvailableWeeks();
   const [selectedWeek, setSelectedWeek] = useState(
@@ -42,11 +45,12 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
 
     const unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
       setUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setUsersLoaded(true);
     });
 
     const unsubPicks = onSnapshot(collection(db, "picks"), (snap) => {
       setPicksDocs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      setLoading(false);
+      setPicksLoaded(true);
     });
 
     return () => {
@@ -78,7 +82,7 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
 
         return {
           userId: u.id,
-          displayName: u.displayName?.trim() || u.email?.trim() || "Anonymous",
+          displayName: u.displayName?.trim() || u.email?.split("@")[0]?.trim() || `User-${u.id.slice(0, 6)}`,
           wins,
           losses,
         };
@@ -115,7 +119,7 @@ export default function Leaderboard({ db, currentUser, regularSeasonGames }) {
 
         return {
           userId: u.id,
-          displayName: u.displayName?.trim() || u.email?.trim() || "Anonymous",
+          displayName: u.displayName?.trim() || u.email?.split("@")[0]?.trim() || `User-${u.id.slice(0, 6)}`,
           correct,
           total: gamesForWeek.length,
           picksByGame,
