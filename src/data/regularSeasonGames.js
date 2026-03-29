@@ -217,15 +217,15 @@ export const getAvailableWeeks = (gamesObj = REGULAR_SEASON_GAMES) => {
 };
 
 // -----------------------------------------------
-// 2025 NFL Season Config
-// Regular season: Sep 4, 2025 – Jan 4, 2026
-// Playoffs end:   Feb 8, 2026 (Super Bowl LX)
+// 2026 NFL Season Config
+// Regular season: Sep 3, 2026 – Jan 3, 2027
+// Playoffs end:   Feb 8, 2027 (Super Bowl LXI)
 // -----------------------------------------------
 export const NFL_SEASON = {
-  year: 2025,
-  regularSeasonStart: new Date("2025-09-04T00:00:00"),
-  regularSeasonEnd: new Date("2026-01-05T00:00:00"),
-  playoffsEnd: new Date("2026-02-09T00:00:00"), // day after Super Bowl
+  year: 2026,
+  regularSeasonStart: new Date("2026-09-03T00:00:00"),
+  regularSeasonEnd: new Date("2027-01-04T00:00:00"),
+  playoffsEnd: new Date("2027-02-09T00:00:00"), // day after Super Bowl
 };
 
 /**

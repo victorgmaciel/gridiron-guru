@@ -1562,3 +1562,224 @@ body {
   background: rgba(57, 255, 20, 0.05);
   border-radius: 6px;
 }
+
+/* =====================
+   GANTT PICKS GRID
+   ===================== */
+.gantt-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 14px;
+  border: 1px solid var(--card-border);
+  background: var(--bg-card);
+}
+
+.gantt-header-row,
+.gantt-player-row {
+  display: flex;
+  align-items: stretch;
+  min-width: max-content;
+}
+
+.gantt-header-row {
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.gantt-player-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.15s;
+}
+
+.gantt-player-row:last-child {
+  border-bottom: none;
+}
+
+.gantt-row-even {
+  background: rgba(255, 255, 255, 0.012);
+}
+
+.gantt-row-me {
+  background: rgba(57, 255, 20, 0.04) !important;
+}
+
+/* Sticky player name column */
+.gantt-player-col {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  min-width: 150px;
+  max-width: 150px;
+  padding: 10px 12px;
+  border-right: 1px solid var(--card-border);
+  flex-shrink: 0;
+}
+
+.gantt-header-cell.gantt-player-col {
+  background: rgba(8, 12, 10, 0.98);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+}
+
+.gantt-player-name {
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gantt-row-me .gantt-player-name {
+  color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.04);
+}
+
+.gantt-rank {
+  font-family: 'Bowlby One', cursive;
+  font-size: 11px;
+  color: var(--silver);
+  min-width: 22px;
+  flex-shrink: 0;
+}
+
+.gantt-score-pill {
+  margin-left: auto;
+  font-family: 'Bowlby One', cursive;
+  font-size: 12px;
+  color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.07);
+  border: 1px solid rgba(57, 255, 20, 0.18);
+  padding: 2px 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+/* Game columns */
+.gantt-game-col {
+  min-width: 90px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  text-align: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.gantt-game-col:last-child {
+  border-right: none;
+}
+
+/* Header game cell */
+.gantt-header-cell.gantt-game-col {
+  gap: 3px;
+  position: relative;
+  padding: 10px 6px;
+}
+
+.gantt-col-live {
+  background: rgba(255, 184, 28, 0.05);
+}
+
+.gantt-col-done {
+  background: rgba(57, 255, 20, 0.03);
+}
+
+.gantt-game-num {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--silver);
+  text-transform: uppercase;
+}
+
+.gantt-game-teams {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.gantt-game-score {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--neon-green);
+}
+
+.gantt-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 6px var(--gold);
+  animation: pulse-gold 1.6s ease-in-out infinite;
+  margin-top: 2px;
+}
+
+/* Pick cells */
+.gantt-pick-cell {
+  gap: 4px;
+  transition: background 0.25s;
+}
+
+.gantt-pick-none {
+  background: transparent;
+}
+
+.gantt-pick-pending {
+  background: rgba(255, 184, 28, 0.06);
+}
+
+.gantt-pick-correct {
+  background: rgba(57, 255, 20, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(57, 255, 20, 0.2);
+}
+
+.gantt-pick-incorrect {
+  background: rgba(255, 85, 85, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 85, 85, 0.2);
+}
+
+.gantt-icon {
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.gantt-pick-correct .gantt-icon { color: var(--neon-green); }
+.gantt-pick-incorrect .gantt-icon { color: #ff8888; }
+
+.gantt-pending-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  display: inline-block;
+}
+
+.gantt-pick-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 78px;
+}
+
+.gantt-pick-none .gantt-pick-name { color: rgba(255,255,255,0.2); }
+.gantt-pick-correct .gantt-pick-name { color: var(--neon-green); }
+.gantt-pick-incorrect .gantt-pick-name { color: #ff8888; }
+.gantt-pick-pending .gantt-pick-name { color: var(--gold); }
